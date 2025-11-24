@@ -1,0 +1,14 @@
+:root {
+  /* Custom Purple Theme - #1b0065 */
+  --p-primary-50: #f5f3ff;
+  --p-primary-100: #ede9fe;
+  --p-primary-200: #ddd6fe;
+  --p-primary-300: #c4b5fd;
+  --p-primary-400: #a78bfa;
+  --p-primary-500: #1b0065;
+  --p-primary-600: #160054;
+  --p-primary-700: #120044;
+  --p-primary-800: #0d0033;
+  --p-primary-900: #080022;
+  --p-primary-950: #040011;
+}
