@@ -93,6 +93,12 @@ h1 {
   align-items: center;
   flex-wrap: wrap;
 }
+.card-lap{
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  align-items: flex-end;
+}
 
 button {
   border-radius: 8px;

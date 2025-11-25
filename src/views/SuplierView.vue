@@ -12,6 +12,8 @@ import Textarea from 'primevue/textarea'
 import AppHeader from '../components/layout/AppHeader.vue'
 import AppSidebar from '../components/layout/AppSidebar.vue'
 import { supabase } from '../composables/useSupabase'
+import InputIcon from 'primevue/inputicon'
+import IconField from 'primevue/iconfield'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -177,31 +179,24 @@ onMounted(async () => {
 <template>
   <div class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
-    
-    <div class="flex container-dsk">
-      <AppSidebar v-model:visible="sidebarVisible" />
+    <AppSidebar v-model:visible="sidebarVisible" />
+    <div class="flex container-dsk">      
       
-      <main class="flex-1 p-6" :class="{ 'ml-64': sidebarVisible }">
-        <div class="mb-6">
-          <h1 class="text-3xl font-bold text-gray-800">Pelanggan/Suplier (Peternak)</h1>
-          <p class="text-gray-600">Kelola data peternak yang menjual susu ke koperasi</p>
-        </div>
-
-        <!-- Filters -->
-        <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <main class="flex-1 p-6">
+        <div class="page-header pt-8">
+          <h1>Pelanggan/Suplier (Peternak)</h1>
+          <div class="filter-section">                      
             <!-- Search -->
-            <div>
-              <span class="p-input-icon-left w-full">
-                <i class="pi pi-search" />
+            <div class="md:col-span-2">                  
+              <IconField>
+                <InputIcon class="pi pi-search" />
                 <InputText
                   v-model="searchQuery"
                   placeholder="Cari nama peternak..."
                   class="w-full"
                 />
-              </span>
+              </IconField>
             </div>
-
             <!-- New Button -->
             <div class="text-right">
               <Button
@@ -212,7 +207,7 @@ onMounted(async () => {
             </div>
           </div>
         </div>
-
+        
         <!-- DataTable -->
         <div class="bg-white rounded-lg shadow-sm">
           <DataTable

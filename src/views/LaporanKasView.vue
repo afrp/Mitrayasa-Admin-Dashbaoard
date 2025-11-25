@@ -192,20 +192,17 @@ onMounted(() => {
 <template>
   <div class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
-    
+    <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">
-      <AppSidebar v-model:visible="sidebarVisible" />
-      
-      <main class="flex-1 p-6" :class="{ 'ml-64': sidebarVisible }">
-        <div class="mb-6">
-          <h1 class="text-3xl font-bold text-gray-800">Laporan Kas</h1>
-          <p class="text-gray-600">Laporan arus kas berdasarkan periode</p>
+      <main class="flex-1 p-6" >
+        <div class="page-header pt-8">
+          <h1>Laporan Kas</h1>          
         </div>
 
         <!-- Filter Card -->
         <Card class="mb-6">
           <template #content>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="card-lap gap-2">
               <!-- Tanggal Awal -->
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Awal *</label>
@@ -294,10 +291,10 @@ onMounted(() => {
               <template #content>
                 <div class="flex items-center justify-between">
                   <div>
-                    <p class="text-sm text-white opacity-90">Saldo Akhir Periode</p>
-                    <p class="text-3xl font-bold text-white">{{ formatCurrency(saldoAkhir) }}</p>
+                    <p class="text-sm text-gray-600">Saldo Akhir Periode</p>
+                    <p class="text-3xl font-bold text-orange-600">{{ formatCurrency(saldoAkhir) }}</p>
                   </div>
-                  <i class="pi pi-money-bill text-4xl text-white opacity-75"></i>
+                  <i class="pi pi-money-bill text-4xl text-orange-600"></i>
                 </div>
               </template>
             </Card>
