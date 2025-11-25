@@ -17,7 +17,7 @@ export async function generateInvoicePDF(invoiceData) {
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(24)
   doc.setFont('helvetica', 'bold')
-  doc.text('KOPERASI SUSU MITRAJAYA', 105, 20, { align: 'center' })
+  doc.text('KOPERASI SUSU MITRAYASA', 105, 20, { align: 'center' })
   
   doc.setFontSize(12)
   doc.setFont('helvetica', 'normal')
@@ -25,7 +25,7 @@ export async function generateInvoicePDF(invoiceData) {
   
   doc.setFontSize(9)
   doc.text('Jl. Peternakan No. 123, Malang, Jawa Timur', 105, 35, { align: 'center' })
-  doc.text('Telp: (0341) 123456 | Email: info@mitrajaya.com', 105, 40, { align: 'center' })
+  doc.text('Telp: (0341) 123456 | Email: info@mitrayasa.com', 105, 40, { align: 'center' })
   
   // Invoice title
   doc.setTextColor(...textColor)
@@ -145,7 +145,7 @@ export async function generateInvoicePDF(invoiceData) {
   doc.setFont('helvetica', 'italic')
   doc.setTextColor(128, 128, 128)
   doc.text('Terima kasih atas kepercayaan Anda', 105, pageHeight - 30, { align: 'center' })
-  doc.text('Pembayaran harap ditransfer ke: Bank BCA 1234567890 a.n. Koperasi Susu Mitrajaya', 105, pageHeight - 24, { align: 'center' })
+  doc.text('Pembayaran harap ditransfer ke: Bank BCA 1234567890 a.n. Koperasi Susu Mitrayasa', 105, pageHeight - 24, { align: 'center' })
   
   doc.setDrawColor(...primaryColor)
   doc.setLineWidth(0.5)

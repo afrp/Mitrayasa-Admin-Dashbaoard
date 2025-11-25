@@ -305,13 +305,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="dashboard-layout">
+  <div class="page-layout">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     
     <main class="dashboard-main">
       <div class="dashboard-container">
-        <div class="dashboard-header">
+        <div class="page-header">
           <h1>Dashboard</h1>
           <div class="filter-section">
             <Dropdown
@@ -407,11 +407,6 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.dashboard-layout {
-  min-height: 100vh;
-  background-color: #f5f5f5;
-  width: 100vw;
-}
 
 .dashboard-main {
   margin-top: 60px;
@@ -421,29 +416,6 @@ onMounted(() => {
 .dashboard-container {
   max-width: 1400px;
   margin: 0 auto;
-}
-
-.dashboard-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.dashboard-header h1 {
-  margin: 0;
-  font-size: 2rem;
-  color: #1b0065;
-  font-weight: 700;
-}
-
-.filter-section {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-  flex-wrap: wrap;
 }
 
 .filter-dropdown {

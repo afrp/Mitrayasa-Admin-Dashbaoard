@@ -1,17 +1,24 @@
 <script setup>
+import { ref } from "vue";
 import { defineEmits } from 'vue'
 import { useAuthStore } from '../../stores/auth'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
+import Popover from 'primevue/popover';
 
 defineEmits(['toggle-sidebar'])
 
 const authStore = useAuthStore()
 const router = useRouter()
+const op = ref();
 
 const handleLogout = async () => {
   await authStore.logout()
   router.push('/login')
+}
+
+const toggle = (event) => {
+    op.value.toggle(event);
 }
 </script>
 
@@ -24,17 +31,22 @@ const handleLogout = async () => {
         text
         class="hamburger-btn"
       />
-      <span class="logo-text">Mitrajaya - Dairy Natural</span>
+      <span class="logo-text">Mitrayasa - Dairy Natural</span>
     </div>
     <div class="header-right">
-      <span class="user-name">{{ authStore.userName }}</span>
-      <Button
-        icon="pi pi-sign-out"
-        @click="handleLogout"
-        text
-        class="logout-btn"
-        label="Logout"
-      />
+      <Button icon="pi pi-user" severity="secondary" rounded size="small" aria-label="User" @click="toggle"/>
+      <Popover ref="op">
+            <div class="block-menu-pop">
+              <span class="user-name">{{ authStore.userName }}</span>
+              <Button
+                icon="pi pi-sign-out"
+                @click="handleLogout"
+                text
+                class="logout-btn"
+                label="Logout"
+              />
+            </div>
+      </Popover>      
     </div>
   </header>
 </template>
@@ -85,13 +97,21 @@ const handleLogout = async () => {
   font-size: 0.95rem;
 }
 
-.logout-btn {
+/* .logout-btn {
   color: white;
 }
 
 .logout-btn:hover {
   background-color: rgba(255, 255, 255, 0.1);
+} */
+
+.block-menu-pop{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
 }
+
 
 @media (max-width: 768px) {
   .logo-text {

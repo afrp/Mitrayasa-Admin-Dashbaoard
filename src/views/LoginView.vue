@@ -50,7 +50,7 @@ const handleLogin = async () => {
     <Card class="login-card">
       <template #header>
         <div class="login-header">
-          <h1>Koperasi Susu Mitrajaya</h1>
+          <h1>Koperasi Susu Mitrayasa</h1>
           <p class="subtitle">Dairy Natural</p>
         </div>
       </template>

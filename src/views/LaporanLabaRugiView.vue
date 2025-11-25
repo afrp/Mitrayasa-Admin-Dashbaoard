@@ -225,7 +225,7 @@ onMounted(() => {
   <div class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     
-    <div class="flex">
+    <div class="flex container-dsk">
       <AppSidebar v-model:visible="sidebarVisible" />
       
       <main class="flex-1 p-6" :class="{ 'ml-64': sidebarVisible }">
