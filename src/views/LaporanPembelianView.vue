@@ -130,7 +130,7 @@ onMounted(async () => {
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">
-      <main class="flex-1 p-6">
+      <main class="flex-1 cont-md">
         <div class="page-header pt-8">
           <h1>Laporan Pembelian per Produk</h1>          
         </div>
@@ -247,6 +247,9 @@ onMounted(async () => {
               responsiveLayout="scroll"
               stripedRows
               :emptyMessage="'Tidak ada data transaksi'"
+              scrollable
+              tableStyle="min-width: 375px"
+              class="table-mdm"
             >
               <Column field="no" header="No" style="width: 70px">
                 <template #body="slotProps">

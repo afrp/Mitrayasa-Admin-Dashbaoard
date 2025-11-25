@@ -556,7 +556,8 @@ onMounted(() => {
   }
 
   .chart-container {
-    height: 250px;
+    height: 170px;
+    width: 81vw;
   }
 }
 
@@ -567,6 +568,10 @@ onMounted(() => {
 
   .charts-section {
     grid-template-columns: 1fr;
+  }
+  .chart-container {
+    height: 250px;
+    width: 88vw;
   }
 }
 </style>

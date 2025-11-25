@@ -180,9 +180,8 @@ onMounted(async () => {
   <div class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
-    <div class="flex container-dsk">      
-      
-      <main class="flex-1 p-6">
+    <div class="flex container-dsk">    
+      <main class="flex-1 cont-md">
         <div class="page-header pt-8">
           <h1>Pelanggan/Suplier (Peternak)</h1>
           <div class="filter-section">                      
@@ -219,8 +218,11 @@ onMounted(async () => {
             responsiveLayout="scroll"
             stripedRows
             :emptyMessage="'Tidak ada data suplier'"
+            scrollable
+            tableStyle="min-width: 375px"
+            class="table-mdm"
           >
-            <Column field="no" header="No" style="width: 70px">
+            <Column field="no" header="No">
               <template #body="slotProps">
                 {{ slotProps.index + 1 }}
               </template>
@@ -234,7 +236,7 @@ onMounted(async () => {
             
             <Column field="alamat" header="Alamat" />
             
-            <Column header="Aksi" style="width: 120px">
+            <Column header="Aksi" >
               <template #body="slotProps">
                 <div class="flex gap-2">
                   <Button

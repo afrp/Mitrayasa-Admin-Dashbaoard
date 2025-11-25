@@ -226,7 +226,7 @@ onMounted(() => {
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">
-      <main class="flex-1 p-6">
+      <main class="flex-1 cont-md">
         <div class="page-header pt-8">
           <h1 class="text-3xl font-bold text-gray-800">Laporan Laba Rugi</h1>          
         </div>
@@ -391,6 +391,9 @@ onMounted(() => {
               responsiveLayout="scroll"
               stripedRows
               :emptyMessage="'Tidak ada data'"
+              scrollable
+              tableStyle="min-width: 375px"
+              class="table-mdm"
             >
               <Column field="no" header="No" style="width: 70px">
                 <template #body="slotProps">

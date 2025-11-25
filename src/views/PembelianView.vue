@@ -302,7 +302,7 @@ onMounted(async () => {
     <AppSidebar v-model:visible="sidebarVisible" />
     
     <div class="flex container-dsk">
-      <main class="flex-1 p-6">
+      <main class="flex-1 cont-md">
         <div class="page-header pt-8">
           <h1>Pembelian</h1>
           <div class="filter-section">                      
@@ -376,8 +376,11 @@ onMounted(async () => {
             responsiveLayout="scroll"
             stripedRows
             :emptyMessage="'Tidak ada data pembelian'"
+            scrollable
+            tableStyle="min-width: 375px"
+            class="table-mdm"
           >
-            <Column field="no" header="No" style="width: 70px">
+            <Column field="no" header="No" sortable>
               <template #body="slotProps">
                 {{ slotProps.index + 1 }}
               </template>
@@ -389,9 +392,9 @@ onMounted(async () => {
               </template>
             </Column>
             
-            <Column field="produk.nama_produk" header="Produk" />
+            <Column field="produk.nama_produk" header="Produk" sortable/>
             
-            <Column field="suplier.nama_suplier" header="Nama Suplier" />
+            <Column field="suplier.nama_suplier" header="Nama Suplier" sortable/>
             
             <Column field="waktu_beli" header="Waktu Beli" />
             
@@ -415,7 +418,7 @@ onMounted(async () => {
             
             <Column field="keterangan" header="Keterangan" />
             
-            <Column header="Aksi" style="width: 120px">
+            <Column header="Aksi">
               <template #body="slotProps">
                 <div class="flex gap-2">
                   <Button
