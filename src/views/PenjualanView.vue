@@ -18,6 +18,8 @@ import Textarea from 'primevue/textarea'
 import Calendar from 'primevue/calendar'
 import AppHeader from '../components/layout/AppHeader.vue'
 import AppSidebar from '../components/layout/AppSidebar.vue'
+import InputIcon from 'primevue/inputicon'
+import IconField from 'primevue/iconfield'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -321,6 +323,7 @@ function onTimeFilterChange() {
 function onCustomDateRangeChange() {
   if (customStartDate.value && customEndDate.value) {
     loadData()
+    showCustomDateRange.value = false
   }
 }
 
@@ -358,34 +361,25 @@ onMounted(async () => {
 <template>
   <div class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
-    
-    <div class="flex container-dsk">
-      <AppSidebar v-model:visible="sidebarVisible" />
-      
-      <main class="flex-1 p-6" :class="{ 'ml-64': sidebarVisible }">
-        <div class="mb-6">
-          <h1 class="text-3xl font-bold text-gray-800">Penjualan</h1>
-          <p class="text-gray-600">Kelola transaksi penjualan produk koperasi</p>
-        </div>
+    <AppSidebar v-model:visible="sidebarVisible" />
 
-        <!-- Filters -->
-        <div class="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <!-- Search -->
+    <div class="flex container-dsk">
+      <main class="flex-1 p-6" >
+        <div class="page-header pt-8">
+          <h1>Penjualan</h1>
+          <div class="filter-section">
             <div class="md:col-span-2">
-              <span class="p-input-icon-left w-full">
-                <i class="pi pi-search" />
+              <IconField>
+                <InputIcon class="pi pi-search" />
                 <InputText
                   v-model="searchQuery"
                   placeholder="Cari nama pembeli atau produk..."
                   class="w-full"
                   @input="loadData"
                 />
-              </span>
+              </IconField>
             </div>
-
-            <!-- Time Filter -->
-            <div>
+            <div class="relative">
               <Dropdown
                 v-model="timeFilter"
                 :options="timeFilterOptions"
@@ -395,8 +389,28 @@ onMounted(async () => {
                 class="w-full"
                 @change="onTimeFilterChange"
               />
+              <Dialog v-model:visible="showCustomDateRange" modal header="Custom Date" class="flex flex-col" :style="{ width: '25rem' }"> 
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Awal</label>
+                  <Calendar
+                    v-model="customStartDate"
+                    dateFormat="dd/mm/yy"
+                    class="w-full"
+                    @date-select="onCustomDateRangeChange"
+                  />
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Akhir</label>
+                  <Calendar
+                    v-model="customEndDate"
+                    dateFormat="dd/mm/yy"
+                    class="w-full"
+                    :minDate="customStartDate"
+                    @date-select="onCustomDateRangeChange"
+                  />
+                </div>
+              </Dialog>
             </div>
-
             <!-- New Button -->
             <div>
               <Button
@@ -404,29 +418,6 @@ onMounted(async () => {
                 icon="pi pi-plus"
                 class="w-full"
                 @click="openNewDialog"
-              />
-            </div>
-          </div>
-
-          <!-- Custom Date Range -->
-          <div v-if="showCustomDateRange" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Awal</label>
-              <Calendar
-                v-model="customStartDate"
-                dateFormat="dd/mm/yy"
-                class="w-full"
-                @date-select="onCustomDateRangeChange"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Akhir</label>
-              <Calendar
-                v-model="customEndDate"
-                dateFormat="dd/mm/yy"
-                class="w-full"
-                :minDate="customStartDate"
-                @date-select="onCustomDateRangeChange"
               />
             </div>
           </div>

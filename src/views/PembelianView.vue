@@ -21,6 +21,7 @@ import AppSidebar from '../components/layout/AppSidebar.vue'
 import InputIcon from 'primevue/inputicon'
 import IconField from 'primevue/iconfield'
 
+
 const toast = useToast()
 const confirm = useConfirm()
 
@@ -74,6 +75,9 @@ const computedTotal = computed(() => {
 // Methods
 function toggleSidebar() {
   sidebarVisible.value = !sidebarVisible.value
+}
+const toggle = (event) => {    
+    console.log('toggled',event);
 }
 
 function getDateRange() {
@@ -130,8 +134,7 @@ async function loadMasterData() {
     //   getAllSupliers()      
     // ])
     products.value = await getProdukByKategori('Susu')
-    await getAllSupliers()
-    console.log('Master data loaded', { products, supliers })
+    await getAllSupliers()    
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -275,6 +278,7 @@ function onTimeFilterChange() {
 function onCustomDateRangeChange() {
   if (customStartDate.value && customEndDate.value) {
     loadData()
+    showCustomDateRange.value = false
   }
 }
 
@@ -301,8 +305,7 @@ onMounted(async () => {
       <main class="flex-1 p-6">
         <div class="page-header pt-8">
           <h1>Pembelian</h1>
-          <div class="filter-section">
-                      
+          <div class="filter-section">                      
                 <!-- Search -->
                 <div class="md:col-span-2">                  
                   <IconField>
@@ -327,10 +330,8 @@ onMounted(async () => {
                     class="w-full"
                     @change="onTimeFilterChange"
                   />
-                  
-                    <!-- Custom Date Range -->
-                    <div v-show="showCustomDateRange" class="all-card-date">
-                      <div>
+                  <Dialog v-model:visible="showCustomDateRange" modal header="Custom Date" class="flex flex-col" :style="{ width: '25rem' }">
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Awal</label>
                         <Calendar
                           v-model="customStartDate"
@@ -349,8 +350,7 @@ onMounted(async () => {
                           @date-select="onCustomDateRangeChange"
                         />
                       </div>
-                    </div>
-                  
+                  </Dialog>
                 </div>
 
                 <!-- New Button -->
