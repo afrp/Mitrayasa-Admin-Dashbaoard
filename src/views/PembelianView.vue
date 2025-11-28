@@ -20,6 +20,7 @@ import AppHeader from '../components/layout/AppHeader.vue'
 import AppSidebar from '../components/layout/AppSidebar.vue'
 import InputIcon from 'primevue/inputicon'
 import IconField from 'primevue/iconfield'
+import PermissionGuard from '../components/PermissionGuard.vue'
 
 
 const toast = useToast()
@@ -297,7 +298,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="page-layout">
+  <PermissionGuard class="page-layout">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     
@@ -573,7 +574,7 @@ onMounted(async () => {
         />
       </template>
     </Dialog>
-  </div>
+  </PermissionGuard>
 </template>
 
 <style scoped>

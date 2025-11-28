@@ -13,6 +13,7 @@ import Chart from 'primevue/chart'
 import ProgressBar from 'primevue/progressbar'
 import AppHeader from '../components/layout/AppHeader.vue'
 import AppSidebar from '../components/layout/AppSidebar.vue'
+import PermissionGuard from '../components/PermissionGuard.vue'
 
 const toast = useToast()
 const { loading, getLaporanLabaRugi } = useLaporan()
@@ -222,7 +223,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <PermissionGuard class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">
@@ -472,7 +473,7 @@ onMounted(() => {
         </div>
       </main>
     </div>
-  </div>
+  </PermissionGuard>
 </template>
 
 <style scoped>

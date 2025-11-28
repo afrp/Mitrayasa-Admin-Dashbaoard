@@ -21,6 +21,7 @@ import AppHeader from '../components/layout/AppHeader.vue'
 import AppSidebar from '../components/layout/AppSidebar.vue'
 import InputIcon from 'primevue/inputicon'
 import IconField from 'primevue/iconfield'
+import PermissionGuard from '../components/PermissionGuard.vue'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -70,7 +71,7 @@ const filteredInvoices = computed(() => {
 })
 
 const grandTotal = computed(() => {
-  return formData.value.harga_total + (formData.value.pajak || 0)
+  return ((formData.value.harga_total || 0)* (formData.value.quantity || 0)) + (formData.value.pajak || 0)
 })
 
 const totalAllInvoices = computed(() => {
@@ -234,7 +235,7 @@ async function handleSaveAndPrint() {
       pembeli_id: formData.value.pembeli_id,
       keterangan: formData.value.keterangan
     }
-
+    
     const savedInvoice = await createInvoice(payload)
     
     toast.add({
@@ -450,8 +451,14 @@ onMounted(async () => {
             </Column>
             
             <Column field="produk.nama_produk" header="Produk" />
+
+            <Column field="quantity" header="Quantity">
+              <template #body="slotProps">
+                {{ slotProps.data.quantity }} {{ slotProps.data.satuan }}
+              </template>
+            </Column>
             
-            <Column field="harga_total" header="Harga Total">
+            <Column field="harga_total" header="Harga Satuan">
               <template #body="slotProps">
                 {{ formatCurrency(slotProps.data.harga_total) }}
               </template>
@@ -481,7 +488,11 @@ onMounted(async () => {
             
             <Column field="pembeli.nama_pembeli" header="Pembeli" />
             
-            <Column field="keterangan" header="Keterangan" />
+            <Column field="keterangan" header="Keterangan">
+              <template #body="slotProps">
+                {{ slotProps.data.keterangan || '-' }}
+              </template>
+            </Column>
             
             <Column header="Aksi">
               <template #body="slotProps">
@@ -570,9 +581,9 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- Harga Total -->
+        <!-- Harga Satuan -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Harga Total *</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Harga Satuan *</label>
           <InputNumber
             v-model="formData.harga_total"
             mode="currency"

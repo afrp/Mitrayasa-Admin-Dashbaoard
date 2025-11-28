@@ -1,6 +1,8 @@
 <script setup>
-import { ref, computed, defineProps, defineEmits } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '../../stores/auth'
+import { supabase } from '../../composables/useSupabase'
 import Menu from 'primevue/menu'
 import Sidebar from 'primevue/sidebar'
 
@@ -14,9 +16,67 @@ const props = defineProps({
 const emit = defineEmits(['update:visible'])
 
 const router = useRouter()
+const authStore = useAuthStore()
 
-const menuItems = ref([
+// State
+const currentAdmin = ref(null)
+const adminPermissions = ref([])
+const loading = ref(true)
+
+// Load current admin data and permissions
+async function loadAdminData() {
+  try {
+    const userId = authStore.user?.id
+    if (!userId) return
+
+    // Get admin data
+    const { data: adminData, error: adminError } = await supabase
+      .from('admins')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (adminError) throw adminError
+
+    currentAdmin.value = adminData
+
+    // Get permissions if not master
+    if (!adminData.is_master) {
+      const { data: permData, error: permError } = await supabase
+        .from('admin_permissions')
+        .select('menu_name')
+        .eq('admin_id', userId)
+        .eq('can_access', true)
+
+      if (permError) throw permError
+
+      adminPermissions.value = permData.map(p => p.menu_name)
+    }
+
+    console.log('Admin data loaded:', {
+      isMaster: adminData.is_master,
+      permissions: adminPermissions.value
+    })
+  } catch (error) {
+    console.error('Error loading admin data:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// Check if user has access to a menu
+function hasAccess(menuKey) {
+  // Master admin has access to all menus
+  if (currentAdmin.value?.is_master) return true
+
+  // Check if menu key exists in permissions
+  return adminPermissions.value.includes(menuKey)
+}
+
+// Base menu structure with permission keys
+const baseMenuItems = ref([
   {
+    key: 'dashboard',
     label: 'Dashboard',
     icon: 'pi pi-home',
     command: () => {
@@ -25,15 +85,16 @@ const menuItems = ref([
     }
   },
   {
+    key: 'pembelian',
     label: 'Pembelian',
     icon: 'pi pi-shopping-cart',
     command: () => {
-      emit('update:visible', false)
       router.push('/pembelian')
-      
+      emit('update:visible', false)
     }
   },
   {
+    key: 'penjualan',
     label: 'Penjualan',
     icon: 'pi pi-money-bill',
     command: () => {
@@ -42,6 +103,7 @@ const menuItems = ref([
     }
   },
   {
+    key: 'pengeluaran-kas',
     label: 'Pengeluaran Kas',
     icon: 'pi pi-wallet',
     command: () => {
@@ -50,7 +112,8 @@ const menuItems = ref([
     }
   },
   {
-    label: 'Invoice',
+    key: 'invoice',
+    label: 'Nota',
     icon: 'pi pi-file',
     command: () => {
       router.push('/invoice')
@@ -58,6 +121,7 @@ const menuItems = ref([
     }
   },
   {
+    key: 'produk',
     label: 'Produk',
     icon: 'pi pi-box',
     command: () => {
@@ -66,10 +130,12 @@ const menuItems = ref([
     }
   },
   {
+    key: 'user',
     label: 'User',
     icon: 'pi pi-users',
     items: [
       {
+        key: 'user-suplier',
         label: 'Pelanggan/Suplier',
         command: () => {
           router.push('/user/suplier')
@@ -77,6 +143,7 @@ const menuItems = ref([
         }
       },
       {
+        key: 'user-pembeli',
         label: 'Pembeli',
         command: () => {
           router.push('/user/pembeli')
@@ -84,6 +151,7 @@ const menuItems = ref([
         }
       },
       {
+        key: 'user-admin',
         label: 'Admin',
         command: () => {
           router.push('/user/admin')
@@ -93,10 +161,12 @@ const menuItems = ref([
     ]
   },
   {
+    key: 'laporan',
     label: 'Laporan',
     icon: 'pi pi-chart-bar',
     items: [
       {
+        key: 'laporan-suplier',
         label: 'Pelanggan/Suplier',
         command: () => {
           router.push('/laporan/suplier')
@@ -104,6 +174,7 @@ const menuItems = ref([
         }
       },
       {
+        key: 'laporan-pembeli',
         label: 'Pembeli',
         command: () => {
           router.push('/laporan/pembeli')
@@ -111,6 +182,7 @@ const menuItems = ref([
         }
       },
       {
+        key: 'laporan-laba-rugi',
         label: 'Laba Rugi',
         command: () => {
           router.push('/laporan/laba-rugi')
@@ -118,6 +190,7 @@ const menuItems = ref([
         }
       },
       {
+        key: 'laporan-kas',
         label: 'Kas',
         command: () => {
           router.push('/laporan/kas')
@@ -125,6 +198,7 @@ const menuItems = ref([
         }
       },
       {
+        key: 'laporan-penjualan',
         label: 'Penjualan',
         command: () => {
           router.push('/laporan/penjualan')
@@ -132,6 +206,7 @@ const menuItems = ref([
         }
       },
       {
+        key: 'laporan-pembelian',
         label: 'Pembelian',
         command: () => {
           router.push('/laporan/pembelian')
@@ -142,9 +217,38 @@ const menuItems = ref([
   }
 ])
 
+// Filtered menu items based on permissions
+const menuItems = computed(() => {
+  if (loading.value) return []
+
+  return baseMenuItems.value
+    .filter(item => {
+      // For items with subitems (User, Laporan)
+      if (item.items) {
+        // Filter subitems
+        const visibleSubitems = item.items.filter(subitem => hasAccess(subitem.key))
+        
+        // If no subitems are visible, hide parent
+        if (visibleSubitems.length === 0) return false
+        
+        // Update items with filtered subitems
+        item.items = visibleSubitems
+        return true
+      }
+      
+      // For regular items
+      return hasAccess(item.key)
+    })
+})
+
 const sidebarVisible = computed({
   get: () => props.visible,
   set: (value) => emit('update:visible', value)
+})
+
+// Lifecycle
+onMounted(async () => {
+  await loadAdminData()
 })
 </script>
 
@@ -153,18 +257,53 @@ const sidebarVisible = computed({
     <template #header>
       <div class="sidebar-header">
         <h3>Menu</h3>
+        <!-- Admin Info Badge -->
+        <div v-if="currentAdmin" class="admin-badge">
+          <i class="pi pi-user text-xs"></i>
+          <span class="text-xs">{{ currentAdmin.is_master ? 'Master Admin' : 'User' }}</span>
+        </div>
       </div>
     </template>
-    <Menu :model="menuItems" class="sidebar-menu" />
+
+    <!-- Loading State -->
+    <div v-if="loading" class="flex items-center justify-center py-8">
+      <i class="pi pi-spin pi-spinner text-2xl text-gray-400"></i>
+    </div>
+
+    <!-- Menu -->
+    <Menu v-else :model="menuItems" class="sidebar-menu" />
+
+    <!-- No Access Message (jika user tidak punya akses sama sekali) -->
+    <div v-if="!loading && menuItems.length === 0" class="p-4 text-center text-gray-500">
+      <i class="pi pi-lock text-3xl mb-2"></i>
+      <p class="text-sm">Tidak ada menu yang dapat diakses.</p>
+      <p class="text-xs mt-1">Hubungi administrator untuk mengatur akses Anda.</p>
+    </div>
   </Sidebar>
 </template>
 
-<style>
+<style scoped>
+.sidebar-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
 .sidebar-header h3 {
   margin: 0;
   color: #1b0065;
   font-size: 1.25rem;
   font-weight: 600;
+}
+
+.admin-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background-color: rgba(27, 0, 101, 0.1);
+  border-radius: 6px;
+  color: #1b0065;
 }
 
 .sidebar-menu {

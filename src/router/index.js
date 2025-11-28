@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { supabase } from '../composables/useSupabase'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import PembelianView from '../views/PembelianView.vue'
@@ -17,6 +18,7 @@ import LaporanPembelianView from '../views/LaporanPembelianView.vue'
 import LaporanKasView from '../views/LaporanKasView.vue'
 import LaporanLabaRugiView from '../views/LaporanLabaRugiView.vue'
 
+
 const routes = [
   {
     path: '/',
@@ -32,91 +34,91 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'dashboard' }
   },
   {
   path: '/pembelian',
   name: 'pembelian',
   component: PembelianView,
-  meta: { requiresAuth: true }
+  meta: { requiresAuth: true, permissionKey: 'pembelian' }
   },
   {
     path: '/penjualan',
     name: 'penjualan',
     component: PenjualanView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'penjualan' }
   },
   {
     path: '/pengeluaran-kas',
     name: 'pengeluaran-kas',
     component: PengeluaranKasView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'pengeluaran-kas' }
   },
   {
   path: '/produk',
   name: 'produk',
   component: ProdukView,
-  meta: { requiresAuth: true }
+  meta: { requiresAuth: true, permissionKey: 'produk' }
   },
   {
     path: '/user/suplier',
     name: 'user-suplier',
     component: SuplierView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'user-suplier' }
   },
   {
     path: '/user/pembeli',
     name: 'user-pembeli',
     component: PembeliView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'user-pembeli' }
   },
   {
     path: '/user/admin',
     name: 'user-admin',
     component: AdminView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'user-admin' }
   },
   {
     path: '/invoice',
     name: 'invoice',
     component: InvoiceView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'invoice' }
   },
   {
   path: '/laporan/suplier',
   name: 'laporan-suplier',
   component: LaporanSuplierView,
-  meta: { requiresAuth: true }
+  meta: { requiresAuth: true, permissionKey: 'laporan-suplier' }
   },
   {
     path: '/laporan/pembeli',
     name: 'laporan-pembeli',
     component: LaporanPembeliView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'laporan-pembeli' }
   },
   {
     path: '/laporan/penjualan',
     name: 'laporan-penjualan',
     component: LaporanPenjualanView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'laporan-penjualan' }
   },
   {
     path: '/laporan/pembelian',
     name: 'laporan-pembelian',
     component: LaporanPembelianView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'laporan-pembelian' }
   },
   {
     path: '/laporan/kas',
     name: 'laporan-kas',
     component: LaporanKasView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'laporan-kas' }
   },
   {
     path: '/laporan/laba-rugi',
     name: 'laporan-laba-rugi',
     component: LaporanLabaRugiView,
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, permissionKey: 'laporan-laba-rugi' }
   }
 ]
 

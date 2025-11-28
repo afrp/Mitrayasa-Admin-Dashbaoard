@@ -13,6 +13,7 @@ import Dropdown from 'primevue/dropdown'
 import Card from 'primevue/card'
 import AppHeader from '../components/layout/AppHeader.vue'
 import AppSidebar from '../components/layout/AppSidebar.vue'
+import PermissionGuard from '../components/PermissionGuard.vue'
 
 const toast = useToast()
 const { loading, getLaporanSuplier } = useLaporan()
@@ -126,7 +127,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <PermissionGuard class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">            
@@ -299,7 +300,7 @@ onMounted(async () => {
         </div>
       </main>
     </div>
-  </div>
+  </PermissionGuard>
 </template>
 
 <style scoped>

@@ -16,6 +16,7 @@ import AppSidebar from '../components/layout/AppSidebar.vue'
 import { supabase } from '../composables/useSupabase'
 import InputIcon from 'primevue/inputicon'
 import IconField from 'primevue/iconfield'
+import PermissionGuard from '../components/PermissionGuard.vue'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -184,7 +185,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <PermissionGuard class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">            
@@ -338,7 +339,7 @@ onMounted(async () => {
         />
       </template>
     </Dialog>
-  </div>
+  </PermissionGuard>
 </template>
 
 <style scoped>

@@ -61,7 +61,7 @@ export async function generateInvoicePDF(invoiceData) {
   
   // Prepare table data
   const hargaSatuan = invoiceData.quantity > 0 
-    ? invoiceData.harga_total / invoiceData.quantity 
+    ? invoiceData.harga_total 
     : 0
   
   const tableData = [
@@ -70,7 +70,7 @@ export async function generateInvoicePDF(invoiceData) {
       invoiceData.produk?.nama_produk || '-',
       `${invoiceData.quantity} ${invoiceData.satuan}`,
       formatCurrency(hargaSatuan),
-      formatCurrency(invoiceData.harga_total)
+      formatCurrency(invoiceData.harga_total * invoiceData.quantity)
     ]
   ]
   
@@ -113,7 +113,7 @@ export async function generateInvoicePDF(invoiceData) {
   
   // Subtotal
   doc.text('Subtotal:', summaryX + 5, finalY + 8)
-  doc.text(formatCurrency(invoiceData.harga_total), summaryX + 65, finalY + 8, { align: 'right' })
+  doc.text(formatCurrency(invoiceData.harga_total * invoiceData.quantity), summaryX + 65, finalY + 8, { align: 'right' })
   
   // Pajak
   doc.text('Pajak:', summaryX + 5, finalY + 16)

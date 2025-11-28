@@ -54,39 +54,46 @@ export function useInvoice() {
   }
 
   async function createInvoice(formData) {
-    loading.value = true
-    error.value = null
-    try {
-      const { data, error: insertError } = await supabase
-        .from('invoice')
-        .insert({
-          tanggal_dibuat: formData.tanggal_dibuat,
-          produk_id: formData.produk_id,
-          quantity: formData.quantity,
-          satuan: formData.satuan,
-          harga_total: formData.harga_total,
-          pajak: formData.pajak,
-          jatuh_tempo: formData.jatuh_tempo,
-          pembeli_id: formData.pembeli_id,
-          keterangan: formData.keterangan || null,
-          no_invoice: '' // Will be auto-generated
-        })
-        .select(`
-          *,
-          produk:produk_id(*),
-          pembeli:pembeli_id(*)
-        `)
-        .single()
-
-      if (insertError) throw insertError
-      return data
-    } catch (e) {
-      error.value = e.message
-      throw e
-    } finally {
-      loading.value = false
+  loading.value = true
+  error.value = null
+  try {
+    // Prepare data tanpa no_invoice (biar trigger yang handle)
+    const dataToInsert = {
+      tanggal_dibuat: formData.tanggal_dibuat,
+      produk_id: formData.produk_id,
+      quantity: parseFloat(formData.quantity), // Pastikan number
+      satuan: formData.satuan,
+      harga_total: parseFloat(formData.harga_total), // Pastikan number
+      pajak: parseFloat(formData.pajak || 0), // Pastikan number
+      jatuh_tempo: formData.jatuh_tempo,
+      pembeli_id: formData.pembeli_id,
+      keterangan: formData.keterangan || null      
     }
+
+    const { data, error: insertError } = await supabase
+      .from('invoice')
+      .insert(dataToInsert)
+      .select(`
+        *,
+        produk:produk_id(*),
+        pembeli:pembeli_id(*)
+      `)
+      .single()
+
+    if (insertError) {
+      console.error('Insert error:', insertError)
+      throw insertError
+    }
+    
+    return data
+  } catch (e) {
+    console.error('Error in createInvoice:', e)
+    error.value = e.message
+    throw e
+  } finally {
+    loading.value = false
   }
+}
 
   async function deleteInvoice(id) {
     loading.value = true
