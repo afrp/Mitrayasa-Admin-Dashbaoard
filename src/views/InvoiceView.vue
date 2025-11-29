@@ -342,7 +342,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <PermissionGuard permission="invoice" class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     
@@ -666,7 +666,7 @@ onMounted(async () => {
         />
       </template>
     </Dialog>
-  </div>
+  </PermissionGuard>
 </template>
 
 <style scoped>

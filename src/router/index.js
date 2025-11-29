@@ -17,6 +17,7 @@ import LaporanPenjualanView from '../views/LaporanPenjualanView.vue'
 import LaporanPembelianView from '../views/LaporanPembelianView.vue'
 import LaporanKasView from '../views/LaporanKasView.vue'
 import LaporanLabaRugiView from '../views/LaporanLabaRugiView.vue'
+import LaporanHutangView from '../views/LaporanHutangView.vue'
 
 
 const routes = [
@@ -119,6 +120,12 @@ const routes = [
     name: 'laporan-laba-rugi',
     component: LaporanLabaRugiView,
     meta: { requiresAuth: true, permissionKey: 'laporan-laba-rugi' }
+  },
+  {
+    path: '/laporan/hutang',
+    name: 'laporan-hutang',
+    component: LaporanHutangView,
+    meta: { requiresAuth: true, permissionKey: 'laporan-hutang' }
   }
 ]
 

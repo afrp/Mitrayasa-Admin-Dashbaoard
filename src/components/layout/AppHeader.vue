@@ -31,7 +31,7 @@ const toggle = (event) => {
         text
         class="hamburger-btn"
       />
-      <span class="logo-text">Mitrayasa - Dairy Natural</span>
+      <img src="../../assets/Mitrayasa-logo.jpeg" alt="Logo" class="logo-header" />
     </div>
     <div class="header-right">
       <Button icon="pi pi-user" severity="secondary" rounded size="small" aria-label="User" @click="toggle"/>
@@ -66,6 +66,12 @@ const toggle = (event) => {
   left: 0;
   right: 0;
   z-index: 1000;
+}
+
+.logo-header{
+  width: auto;
+  height: 47px;
+  border-radius: 50px;
 }
 
 .header-left {

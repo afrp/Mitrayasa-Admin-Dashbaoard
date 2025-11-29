@@ -529,7 +529,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PermissionGuard class="min-h-screen bg-gray-50">
+  <PermissionGuard permission="admin" class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">

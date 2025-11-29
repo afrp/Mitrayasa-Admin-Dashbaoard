@@ -212,6 +212,14 @@ const baseMenuItems = ref([
           router.push('/laporan/pembelian')
           emit('update:visible', false)
         }
+      },
+      {
+        key: 'laporan-hutang',
+        label: 'Hutang/Piutang',
+        command: () => {
+          router.push('/laporan/hutang')
+          emit('update:visible', false)
+        }
       }
     ]
   }

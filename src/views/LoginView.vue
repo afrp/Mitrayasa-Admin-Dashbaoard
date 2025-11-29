@@ -50,8 +50,7 @@ const handleLogin = async () => {
     <Card class="login-card">
       <template #header>
         <div class="login-header">
-          <h1>Koperasi Susu Mitrayasa</h1>
-          <p class="subtitle">Dairy Natural</p>
+          <img src="../assets/Mitrayasa-logo.jpeg" alt="Logo" class="logo-header" />
         </div>
       </template>
       <template #content>
@@ -122,12 +121,14 @@ const handleLogin = async () => {
   color: white;
   margin: -1.25rem -1.25rem 0;
   border-radius: 6px 6px 0 0;
+  display: flex ;
+  justify-content: center;
 }
 
-.login-header h1 {
-  margin: 0 0 0.5rem;
-  font-size: 1.75rem;
-  font-weight: 700;
+.logo-header{
+  width: 350px;
+  height: auto;
+  border-radius: 50px;
 }
 
 .subtitle {

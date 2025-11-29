@@ -191,7 +191,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <PermissionGuard class="min-h-screen bg-gray-50">
+  <PermissionGuard permission="laporan-kas" class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">

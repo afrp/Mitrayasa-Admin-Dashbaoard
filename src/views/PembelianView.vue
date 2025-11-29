@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { usePembelian } from '../composables/usePembelian'
@@ -21,7 +21,9 @@ import AppSidebar from '../components/layout/AppSidebar.vue'
 import InputIcon from 'primevue/inputicon'
 import IconField from 'primevue/iconfield'
 import PermissionGuard from '../components/PermissionGuard.vue'
-
+import { usePembayaran } from '../composables/usePembayaran'
+import PaymentDialog from '../components/PaymentDialog.vue'
+import Tag from 'primevue/tag' 
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -39,6 +41,21 @@ const timeFilter = ref('month')
 const customStartDate = ref(null)
 const customEndDate = ref(null)
 const showCustomDateRange = ref(false)
+const showPaymentDialog = ref(false)
+const selectedTransactionForPayment = ref({
+  id: null,
+  total: 0,
+  jumlah_dibayar: 0,
+  sisa_hutang: 0,
+  tanggal_jatuh_tempo: null
+})
+const statusFilter = ref('all') 
+
+const statusFilterOptions = [
+  { label: 'Semua Status', value: 'all' },
+  { label: 'Lunas', value: 'Lunas' },
+  { label: 'Belum Lunas', value: 'Belum Lunas' }
+]
 
 // Form data
 const formData = ref({
@@ -49,7 +66,11 @@ const formData = ref({
   waktu_beli: 'Pagi',
   quantity: 0,
   harga_beli: 0,
-  keterangan: ''
+  keterangan: '',
+  status_pembayaran: 'Belum Lunas',
+  jumlah_dibayar: 0,
+  tanggal_jatuh_tempo: null,
+  keterangan_pembayaran: ''
 })
 
 // Time filter options
@@ -116,7 +137,8 @@ async function loadData() {
     await getAllPembelian({
       startDate,
       endDate,
-      search: searchQuery.value
+      search: searchQuery.value,
+      status_pembayaran: statusFilter.value !== 'all' ? statusFilter.value : undefined
     })
   } catch (error) {
     toast.add({
@@ -146,6 +168,24 @@ async function loadMasterData() {
   }
 }
 
+function openPaymentDialog(data) {
+  selectedTransactionForPayment.value = data
+  showPaymentDialog.value = true
+}
+
+async function handlePaymentSuccess() {
+  await loadData()
+}
+
+function isOverdue(jatuhTempo, status) {
+  if (status === 'Lunas' || !jatuhTempo) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dueDate = new Date(jatuhTempo)
+  dueDate.setHours(0, 0, 0, 0)
+  return dueDate < today
+}
+
 function openNewDialog() {
   isEditMode.value = false
   formData.value = {
@@ -156,7 +196,11 @@ function openNewDialog() {
     waktu_beli: 'Pagi',
     quantity: 0,
     harga_beli: 0,
-    keterangan: ''
+    keterangan: '',
+    status_pembayaran: 'Belum Lunas',
+    jumlah_dibayar: 0,
+    tanggal_jatuh_tempo: null,
+    keterangan_pembayaran: ''
   }
   showDialog.value = true
 }
@@ -171,7 +215,11 @@ function openEditDialog(data) {
     waktu_beli: data.waktu_beli,
     quantity: data.quantity,
     harga_beli: data.harga_beli,
-    keterangan: data.keterangan || ''
+    keterangan: data.keterangan || '',
+    status_pembayaran: data.status_pembayaran,
+    jumlah_dibayar: data.jumlah_dibayar,
+    tanggal_jatuh_tempo: data.tanggal_jatuh_tempo ? new Date(data.tanggal_jatuh_tempo) : null,
+    keterangan_pembayaran: data.keterangan_pembayaran || ''
   }
   showDialog.value = true
 }
@@ -198,6 +246,28 @@ async function handleSave() {
       return
     }
 
+    // Validate payment
+    const total = formData.value.quantity * formData.value.harga_beli
+    if (formData.value.jumlah_dibayar > total) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Peringatan',
+        detail: 'Jumlah dibayar tidak boleh lebih dari total',
+        life: 3000
+      })
+      return
+    }
+
+    if (formData.value.status_pembayaran === 'Belum Lunas' && !formData.value.tanggal_jatuh_tempo) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Peringatan',
+        detail: 'Tanggal jatuh tempo wajib diisi untuk status Belum Lunas',
+        life: 3000
+      })
+      return
+    }
+
     const payload = {
       tanggal_transaksi: formatDate(formData.value.tanggal_transaksi, 'yyyy-MM-dd'),
       produk_id: formData.value.produk_id,
@@ -205,7 +275,13 @@ async function handleSave() {
       waktu_beli: formData.value.waktu_beli,
       quantity: formData.value.quantity,
       harga_beli: formData.value.harga_beli,
-      keterangan: formData.value.keterangan
+      keterangan: formData.value.keterangan,
+      // Payment fields
+      status_pembayaran: formData.value.status_pembayaran,
+      jumlah_dibayar: formData.value.jumlah_dibayar,
+      tanggal_jatuh_tempo: formData.value.tanggal_jatuh_tempo ? 
+        formatDate(formData.value.tanggal_jatuh_tempo, 'yyyy-MM-dd') : null,
+      keterangan_pembayaran: formData.value.keterangan_pembayaran
     }
 
     if (isEditMode.value) {
@@ -290,6 +366,15 @@ function onProdukChange(produkId) {
   }
 }
 
+watch([() => formData.value.quantity, () => formData.value.harga_beli, () => formData.value.status_pembayaran], 
+  ([quantity, harga, status]) => {
+    const total = quantity * harga
+    if (status === 'Lunas') {
+      formData.value.jumlah_dibayar = total
+    }
+  }
+)
+
 // Lifecycle
 onMounted(async () => {
   await loadMasterData()
@@ -298,7 +383,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <PermissionGuard class="page-layout">
+  <PermissionGuard permission="laporan-pembelian" class="page-layout">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     
@@ -318,6 +403,18 @@ onMounted(async () => {
                       @input="loadData"
                     />
                   </IconField>
+                </div>
+
+                <div>
+                  <Dropdown
+                    v-model="statusFilter"
+                    :options="statusFilterOptions"
+                    optionLabel="label"
+                    optionValue="value"
+                    placeholder="Status Pembayaran"
+                    class="w-full"
+                    @change="loadData"
+                  />
                 </div>
 
                 <!-- Time Filter -->
@@ -416,12 +513,48 @@ onMounted(async () => {
                 {{ formatCurrency(slotProps.data.total) }}
               </template>
             </Column>
+
+            <Column field="status_pembayaran" header="Status">
+              <template #body="slotProps">
+                <div class="flex flex-col gap-1">
+                  <Tag 
+                    :value="slotProps.data.status_pembayaran"
+                    :severity="slotProps.data.status_pembayaran === 'Lunas' ? 'success' : 'warning'"
+                  />
+                  <Tag 
+                    v-if="isOverdue(slotProps.data.tanggal_jatuh_tempo, slotProps.data.status_pembayaran)"
+                    value="OVERDUE"
+                    severity="danger"
+                    class="text-xs"
+                  />
+                </div>
+              </template>
+            </Column>
+
+            <Column field="sisa_hutang" header="Sisa Hutang">
+              <template #body="slotProps">
+                <span 
+                  v-if="slotProps.data.status_pembayaran === 'Belum Lunas'"
+                  class="font-bold text-red-600"
+                >
+                  {{ formatCurrency(slotProps.data.sisa_hutang) }}
+                </span>
+                <span v-else class="text-gray-400">-</span>
+              </template>
+            </Column>
             
             <Column field="keterangan" header="Keterangan" />
             
             <Column header="Aksi">
               <template #body="slotProps">
                 <div class="flex gap-2">
+                  <Button
+                    v-if="slotProps.data.status_pembayaran === 'Belum Lunas'"
+                    icon="pi pi-money-bill"
+                    class="p-button-success p-button-sm"
+                    v-tooltip.top="'Bayar Hutang'"
+                    @click="openPaymentDialog(slotProps.data)"
+                  />
                   <Button
                     icon="pi pi-pencil"
                     class="p-button-warning p-button-sm"
@@ -548,9 +681,75 @@ onMounted(async () => {
           />
         </div>
 
-        <!-- Keterangan -->
+        <!-- ADD Payment Section -->
+        <div class="p-4 bg-blue-50 rounded-lg">
+          <h4 class="font-semibold mb-3 text-blue-900">Informasi Pembayaran</h4>
+          
+          <!-- Status Pembayaran -->
+          <div class="mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Status Pembayaran</label>
+            <div class="flex gap-4">
+              <div class="flex items-center">
+                <RadioButton
+                  v-model="formData.status_pembayaran"
+                  inputId="lunas"
+                  value="Lunas"
+                />
+                <label for="lunas" class="ml-2">Lunas</label>
+              </div>
+              <div class="flex items-center">
+                <RadioButton
+                  v-model="formData.status_pembayaran"
+                  inputId="belum_lunas"
+                  value="Belum Lunas"
+                />
+                <label for="belum_lunas" class="ml-2">Belum Lunas (Hutang)</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Jumlah Dibayar (DP) -->
+          <div class="mb-3" v-if="formData.status_pembayaran === 'Belum Lunas'">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Jumlah Dibayar (DP)</label>
+            <InputNumber
+              v-model="formData.jumlah_dibayar"
+              mode="currency"
+              currency="IDR"
+              locale="id-ID"
+              class="w-full"
+              :max="computedTotal"
+            />
+            <small class="text-gray-500">
+              Sisa Hutang: {{ formatCurrency(computedTotal - (formData.jumlah_dibayar || 0)) }}
+            </small>
+          </div>
+
+          <!-- Tanggal Jatuh Tempo -->
+          <div class="mb-3" v-if="formData.status_pembayaran === 'Belum Lunas'">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tanggal Jatuh Tempo *</label>
+            <Calendar
+              v-model="formData.tanggal_jatuh_tempo"
+              dateFormat="dd/mm/yy"
+              :minDate="new Date()"
+              class="w-full"
+            />
+          </div>
+
+          <!-- Keterangan Pembayaran -->
+          <div v-if="formData.status_pembayaran === 'Belum Lunas'">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Keterangan Pembayaran</label>
+            <Textarea
+              v-model="formData.keterangan_pembayaran"
+              rows="2"
+              class="w-full"
+              placeholder="Catatan pembayaran..."
+            />
+          </div>
+        </div>
+
+        <!-- Keterangan Transaksi -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Keterangan</label>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Keterangan Transaksi</label>
           <Textarea
             v-model="formData.keterangan"
             rows="3"
@@ -574,6 +773,13 @@ onMounted(async () => {
         />
       </template>
     </Dialog>
+
+    <PaymentDialog
+      v-model:visible="showPaymentDialog"
+      :transaction-data="selectedTransactionForPayment"
+      transaction-type="pembelian"
+      @payment-success="handlePaymentSuccess"
+    />
   </PermissionGuard>
 </template>
 

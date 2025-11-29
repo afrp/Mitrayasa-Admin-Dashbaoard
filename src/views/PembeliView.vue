@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { usePembeli } from '../composables/usePembeli'
+import { formatCurrency } from '../utils/formatters'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
@@ -27,6 +28,7 @@ const sidebarVisible = ref(false)
 const showDialog = ref(false)
 const isEditMode = ref(false)
 const searchQuery = ref('')
+const pembeliPiutang = ref({}) // Store piutang per pembeli_id
 
 // Form data
 const formData = ref({
@@ -181,11 +183,40 @@ function confirmDelete(data) {
 // Lifecycle
 onMounted(async () => {
   await getAllPembeli()
+  await loadPiutangPerPembeli()
 })
+
+async function loadPiutangPerPembeli() {
+  try {
+    const { data, error } = await supabase
+      .from('penjualan')
+      .select('pembeli_id, sisa_piutang')
+      .eq('status_pembayaran', 'Belum Lunas')
+
+    if (error) throw error
+
+    // Group piutang by pembeli_id
+    pembeliPiutang.value = {}
+    if (data) {
+      data.forEach(item => {
+        if (!pembeliPiutang.value[item.pembeli_id]) {
+          pembeliPiutang.value[item.pembeli_id] = 0
+        }
+        pembeliPiutang.value[item.pembeli_id] += item.sisa_piutang || 0
+      })
+    }
+  } catch (error) {
+    console.error('Error loading piutang per pembeli:', error)
+  }
+}
+
+function getPiutangPembeli(pembeli_id) {
+  return pembeliPiutang.value[pembeli_id] || 0
+}
 </script>
 
 <template>
-  <PermissionGuard class="min-h-screen bg-gray-50">
+  <PermissionGuard permission="pembeli" class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">            
@@ -248,6 +279,20 @@ onMounted(async () => {
                   :value="slotProps.data.tipe"
                   :severity="slotProps.data.tipe === 'B2B' ? 'info' : 'success'"
                 />
+              </template>
+            </Column>
+            
+            <Column field="piutang" header="Piutang Koperasi">
+              <template #body="slotProps">
+                <span 
+                  v-if="getPiutangPembeli(slotProps.data.id) > 0"
+                  class="font-semibold text-orange-600"
+                >
+                  {{ formatCurrency(getPiutangPembeli(slotProps.data.id)) }}
+                </span>
+                <span v-else class="text-green-600">
+                  {{ formatCurrency(0) }}
+                </span>
               </template>
             </Column>
             

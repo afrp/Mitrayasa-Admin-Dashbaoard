@@ -27,7 +27,9 @@ const summaryData = ref({
   totalStok: 0,
   kasTerkini: 0,
   totalPenjualan: 0,
-  totalPembelian: 0
+  totalPembelian: 0,
+  totalHutang: 0,
+  totalPiutang: 0
 })
 
 // Chart data
@@ -64,6 +66,20 @@ const summaryCards = computed(() => [
     icon: 'pi-shopping-bag',
     color: '#1b0065',
     isCurrency: true
+  },
+  {
+    title: 'Total Hutang',
+    value: summaryData.value.totalHutang,
+    icon: 'pi-exclamation-circle',
+    color: '#dc2626',
+    isCurrency: true
+  },
+  {
+    title: 'Total Piutang',
+    value: summaryData.value.totalPiutang,
+    icon: 'pi-hourglass',
+    color: '#f59e0b',
+    isCurrency: true
   }
 ])
 
@@ -99,6 +115,7 @@ function getDateRange() {
         startDate = formatDate(dateRange.value[0], 'yyyy-MM-dd')
         endDate = formatDate(dateRange.value[1], 'yyyy-MM-dd')
       } else {
+        // Fallback ke bulan ini jika custom range belum lengkap
         startDate = formatDate(new Date(today.getFullYear(), today.getMonth(), 1), 'yyyy-MM-dd')
         endDate = formatDate(today, 'yyyy-MM-dd')
       }
@@ -167,6 +184,22 @@ async function loadDashboardData() {
     const totalAllPembelian = allPembelianData?.reduce((sum, item) => sum + item.total, 0) || 0
 
     summaryData.value.kasTerkini = totalAllPenjualan - totalAllPembelian - totalPengeluaran
+
+    // 5. Total Hutang (Belum Lunas dari pembelian)
+    const { data: hutangData } = await supabase
+      .from('pembelian')
+      .select('sisa_hutang')
+      .eq('status_pembayaran', 'Belum Lunas')
+
+    summaryData.value.totalHutang = hutangData?.reduce((sum, item) => sum + (item.sisa_hutang || 0), 0) || 0
+
+    // 6. Total Piutang (Belum Lunas dari penjualan)
+    const { data: piutangData } = await supabase
+      .from('penjualan')
+      .select('sisa_piutang')
+      .eq('status_pembayaran', 'Belum Lunas')
+
+    summaryData.value.totalPiutang = piutangData?.reduce((sum, item) => sum + (item.sisa_piutang || 0), 0) || 0
 
     // Generate charts
     generatePenjualanChart(penjualanData || [])
@@ -295,7 +328,14 @@ function generatePembelianChart(data) {
 
 // Watch filter changes
 watch([selectedFilter, dateRange], () => {
-  loadDashboardData()
+  // Only reload if custom filter has valid date range
+  if (selectedFilter.value === 'custom') {
+    if (dateRange.value && dateRange.value.length === 2) {
+      loadDashboardData()
+    }
+  } else {
+    loadDashboardData()
+  }
 })
 
 // Lifecycle

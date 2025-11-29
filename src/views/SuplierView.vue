@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { useSupliers } from '../composables/useSupliers'
+import { formatCurrency } from '../utils/formatters'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Button from 'primevue/button'
@@ -25,6 +26,7 @@ const sidebarVisible = ref(false)
 const showDialog = ref(false)
 const isEditMode = ref(false)
 const searchQuery = ref('')
+const suplierHutang = ref({}) // Store hutang per suplier_id
 
 // Form data
 const formData = ref({
@@ -174,11 +176,40 @@ function confirmDelete(data) {
 // Lifecycle
 onMounted(async () => {
   await getAllSupliers()
+  await loadHutangPerSuplier()
 })
+
+async function loadHutangPerSuplier() {
+  try {
+    const { data, error } = await supabase
+      .from('pembelian')
+      .select('suplier_id, sisa_hutang')
+      .eq('status_pembayaran', 'Belum Lunas')
+
+    if (error) throw error
+
+    // Group hutang by suplier_id
+    suplierHutang.value = {}
+    if (data) {
+      data.forEach(item => {
+        if (!suplierHutang.value[item.suplier_id]) {
+          suplierHutang.value[item.suplier_id] = 0
+        }
+        suplierHutang.value[item.suplier_id] += item.sisa_hutang || 0
+      })
+    }
+  } catch (error) {
+    console.error('Error loading hutang per suplier:', error)
+  }
+}
+
+function getHutangSuplier(suplier_id) {
+  return suplierHutang.value[suplier_id] || 0
+}
 </script>
 
 <template>
-  <PermissionGuard class="min-h-screen bg-gray-50">
+  <PermissionGuard permission="suplier" class="min-h-screen bg-gray-50">
     <AppHeader @toggle-sidebar="toggleSidebar" />
     <AppSidebar v-model:visible="sidebarVisible" />
     <div class="flex container-dsk">    
@@ -236,6 +267,20 @@ onMounted(async () => {
             <Column field="kelompok" header="Kelompok" />
             
             <Column field="alamat" header="Alamat" />
+            
+            <Column field="hutang" header="Hutang Koperasi">
+              <template #body="slotProps">
+                <span 
+                  v-if="getHutangSuplier(slotProps.data.id) > 0"
+                  class="font-semibold text-red-600"
+                >
+                  {{ formatCurrency(getHutangSuplier(slotProps.data.id)) }}
+                </span>
+                <span v-else class="text-green-600">
+                  {{ formatCurrency(0) }}
+                </span>
+              </template>
+            </Column>
             
             <Column header="Aksi" >
               <template #body="slotProps">

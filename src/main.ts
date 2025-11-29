@@ -6,6 +6,7 @@ import ToastService from 'primevue/toastservice'
 import ConfirmationService from 'primevue/confirmationservice'
 import router from './router'
 import { useAuthStore } from './stores/auth'
+import Tooltip from 'primevue/tooltip';
 
 import './assets/primevue-theme.css'
 import 'primeicons/primeicons.css'
@@ -16,6 +17,7 @@ import App from './App.vue'
 const app = createApp(App)
 const pinia = createPinia()
 
+app.directive('tooltip', Tooltip);
 app.use(pinia)
 app.use(router)
 app.use(PrimeVue, {
