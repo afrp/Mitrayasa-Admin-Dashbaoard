@@ -41,7 +41,7 @@ const pembelianChartOptions = ref(null)
 // Computed
 const summaryCards = computed(() => [
   {
-    title: 'Total Stok Produk',
+    title: 'Total Produk',
     value: summaryData.value.totalStok,
     icon: 'pi-box',
     color: '#1b0065'
