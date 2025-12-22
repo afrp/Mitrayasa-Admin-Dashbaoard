@@ -44,42 +44,48 @@ const summaryCards = computed(() => [
     title: 'Total Produk',
     value: summaryData.value.totalStok,
     icon: 'pi-box',
-    color: '#1b0065'
+    color: '#1b0065',
+    route: '/produk',
   },
   {
     title: 'Kas Terkini',
     value: summaryData.value.kasTerkini,
     icon: 'pi-wallet',
     color: '#1b0065',
-    isCurrency: true
+    isCurrency: true,
+    route: '/laporan/kas'
   },
   {
     title: 'Total Penjualan',
     value: summaryData.value.totalPenjualan,
     icon: 'pi-shopping-cart',
     color: '#1b0065',
-    isCurrency: true
+    isCurrency: true,
+    route: '/laporan/penjualan'
   },
   {
     title: 'Total Pembelian',
     value: summaryData.value.totalPembelian,
     icon: 'pi-shopping-bag',
     color: '#1b0065',
-    isCurrency: true
+    isCurrency: true,
+    route: '/laporan/pembelian'
   },
   {
     title: 'Total Hutang',
     value: summaryData.value.totalHutang,
     icon: 'pi-exclamation-circle',
     color: '#dc2626',
-    isCurrency: true
+    isCurrency: true,
+    route: '/laporan/hutang'
   },
   {
     title: 'Total Piutang',
     value: summaryData.value.totalPiutang,
     icon: 'pi-hourglass',
     color: '#f59e0b',
-    isCurrency: true
+    isCurrency: true,
+    route: '/laporan/hutang'
   }
 ])
 
@@ -380,6 +386,7 @@ onMounted(() => {
             v-for="(card, index) in summaryCards"
             :key="index"
             class="summary-card"
+            v-on:click="$router.push(card.route)"
           >
             <template #content>
               <div class="card-content">
@@ -477,6 +484,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #ffffff 0%, #f8f5ff 100%);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
 }
 
 .summary-card:hover {

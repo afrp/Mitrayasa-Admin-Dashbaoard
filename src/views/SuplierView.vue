@@ -268,7 +268,7 @@ function getHutangSuplier(suplier_id) {
             
             <Column field="alamat" header="Alamat" />
             
-            <Column field="hutang" header="Hutang Koperasi">
+            <Column field="hutang" header="Hutang">
               <template #body="slotProps">
                 <span 
                   v-if="getHutangSuplier(slotProps.data.id) > 0"
