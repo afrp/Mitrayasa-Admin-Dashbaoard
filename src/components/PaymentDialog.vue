@@ -259,6 +259,8 @@ function setPayFullAmount() {
               mode="currency"
               currency="IDR"
               locale="id-ID"
+              :minFractionDigits="0"
+              :maxFractionDigits="0"
               class="flex-1"
               :max="maxPaymentAmount"
             />

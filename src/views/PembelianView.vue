@@ -632,6 +632,8 @@ onMounted(async () => {
             mode="currency"
             currency="IDR"
             locale="id-ID"
+            :minFractionDigits="0"
+            :maxFractionDigits="0"
             class="w-full"
           />
         </div>
@@ -716,6 +718,8 @@ onMounted(async () => {
               mode="currency"
               currency="IDR"
               locale="id-ID"
+              :minFractionDigits="0"
+              :maxFractionDigits="0"
               class="w-full"
               :max="computedTotal"
             />
