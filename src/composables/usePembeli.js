@@ -41,7 +41,7 @@ export function usePembeli() {
 
       if (fetchError) throw fetchError
       
-      console.log('Pembeli B2B loaded:', data) // Debug log
+      // console.log('Pembeli B2B loaded:', data) // Debug log
       
       pembeli.value = data || []
       return data || []

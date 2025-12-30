@@ -7,6 +7,7 @@ export const useAuthStore = defineStore('auth', () => {
   const user = ref(null)
   const isAuthenticated = ref(false)
   const loading = ref(false)
+  const initialized = ref(false)
 
   const { login: authLogin, logout: authLogout, getCurrentUser } = useAuth()
 
@@ -62,6 +63,7 @@ export const useAuthStore = defineStore('auth', () => {
       console.error('Failed to initialize auth:', error)
     } finally {
       loading.value = false
+      initialized.value = true
     }
   }
 
@@ -69,6 +71,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     isAuthenticated,
     loading,
+    initialized,
     isLoggedIn,
     userName,
     login,

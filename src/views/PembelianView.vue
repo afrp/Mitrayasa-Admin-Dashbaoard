@@ -98,9 +98,7 @@ const computedTotal = computed(() => {
 function toggleSidebar() {
   sidebarVisible.value = !sidebarVisible.value
 }
-const toggle = (event) => {    
-    console.log('toggled',event);
-}
+
 
 function getDateRange() {
   const today = new Date()

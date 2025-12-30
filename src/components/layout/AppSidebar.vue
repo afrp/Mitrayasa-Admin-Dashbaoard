@@ -53,10 +53,10 @@ async function loadAdminData() {
       adminPermissions.value = permData.map(p => p.menu_name)
     }
 
-    console.log('Admin data loaded:', {
-      isMaster: adminData.is_master,
-      permissions: adminPermissions.value
-    })
+    // console.log('Admin data loaded:', {
+    //   isMaster: adminData.is_master,
+    //   permissions: adminPermissions.value
+    // })
   } catch (error) {
     console.error('Error loading admin data:', error)
   } finally {

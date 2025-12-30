@@ -93,9 +93,7 @@ async function loadCurrentAdmin() {
 
     if (error) throw error
     
-    currentAdmin.value = data
-    console.log('✅ Current admin loaded:', currentAdmin.value)
-    console.log('Is Master:', currentAdmin.value?.is_master)
+    currentAdmin.value = data    
     
     // Extra: Simpan ke localStorage untuk quick check
     localStorage.setItem('admin_role', data.is_master ? 'master' : 'user')
@@ -128,10 +126,10 @@ async function loadCurrentAdmin() {
 async function loadAdmins() {
   loading.value = true
   try {
-    console.log('🔍 Loading admins...')
-    console.log('Current User ID:', currentUserId.value)
-    console.log('Current Admin:', currentAdmin.value)
-    console.log('Is Master Admin:', isMasterAdmin.value)
+    // console.log('🔍 Loading admins...')
+    // console.log('Current User ID:', currentUserId.value)
+    // console.log('Current Admin:', currentAdmin.value)
+    // console.log('Is Master Admin:', isMasterAdmin.value)
 
     let query = supabase
       .from('admins')
@@ -140,7 +138,7 @@ async function loadAdmins() {
 
     // Jika bukan master admin, hanya tampilkan data sendiri
     if (!isMasterAdmin.value) {
-      console.log('⚠️ Not master admin, filtering to own data only')
+      // console.log('⚠️ Not master admin, filtering to own data only')
       query = query.eq('id', currentUserId.value)
     } else {
       console.log('✅ Master admin, loading all data')
@@ -153,8 +151,8 @@ async function loadAdmins() {
       throw error
     }
 
-    console.log('📊 Loaded admins data:', data)
-    console.log('📊 Total admins:', data?.length)
+    // console.log('📊 Loaded admins data:', data)
+    // console.log('📊 Total admins:', data?.length)
     
     admins.value = data || []
   } catch (error) {
