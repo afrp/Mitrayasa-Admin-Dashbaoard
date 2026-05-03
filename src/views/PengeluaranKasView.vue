@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { useConfirm } from 'primevue/useconfirm'
 import { usePengeluaranKas } from '../composables/usePengeluaranKas'
+import { useDebounce } from '../composables/useDebounce'
 import { formatCurrency, formatDate } from '../utils/formatters'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -22,7 +23,7 @@ import PermissionGuard from '../components/PermissionGuard.vue'
 const toast = useToast()
 const confirm = useConfirm()
 
-const { pengeluaran, loading, getAllPengeluaranKas, createPengeluaranKas, updatePengeluaranKas, deletePengeluaranKas } = usePengeluaranKas()
+const { pengeluaran, loading, getAllPengeluaranKas, getPengeluaranKasLazy, createPengeluaranKas, updatePengeluaranKas, deletePengeluaranKas } = usePengeluaranKas()
 
 // State
 const sidebarVisible = ref(false)
@@ -34,6 +35,17 @@ const categoryFilter = ref('All')
 const customStartDate = ref(null)
 const customEndDate = ref(null)
 const showCustomDateRange = ref(false)
+
+const lazyParams = ref({
+  first: 0,
+  rows: 10,
+  page: 0,
+  totalRecords: 0,
+  sortField: 'tanggal_transaksi',
+  sortOrder: -1
+})
+
+const listData = ref([])
 
 // Form data
 const formData = ref({
@@ -67,12 +79,8 @@ const tipeOptions = [
 ]
 
 // Computed
-const filteredPengeluaran = computed(() => {
-  return pengeluaran.value
-})
-
 const totalPengeluaran = computed(() => {
-  return pengeluaran.value.reduce((sum, item) => sum + item.harga_total, 0)
+  return listData.value.reduce((sum, item) => sum + item.harga_total, 0)
 })
 
 // Methods
@@ -110,14 +118,37 @@ function getDateRange() {
 }
 
 async function loadData() {
+  await onLazyLoad()
+}
+
+async function onLazyLoad(event) {
+  if (event) {
+    lazyParams.value.first = event.first
+    lazyParams.value.rows = event.rows
+    lazyParams.value.page = event.page
+    lazyParams.value.sortField = event.sortField
+    lazyParams.value.sortOrder = event.sortOrder
+  }
+
   try {
     const { startDate, endDate } = getDateRange()
-    await getAllPengeluaranKas({
-      startDate,
-      endDate,
-      search: searchQuery.value,
-      category: categoryFilter.value
-    })
+    const result = await getPengeluaranKasLazy(
+      {
+        startDate,
+        endDate,
+        search: searchQuery.value,
+        category: categoryFilter.value
+      },
+      {
+        page: lazyParams.value.page,
+        rows: lazyParams.value.rows,
+        sortField: lazyParams.value.sortField,
+        sortOrder: lazyParams.value.sortOrder
+      }
+    )
+
+    listData.value = result.data
+    lazyParams.value.totalRecords = result.totalRecords
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -127,6 +158,11 @@ async function loadData() {
     })
   }
 }
+
+const debouncedSearch = useDebounce(() => {
+  lazyParams.value.first = 0
+  loadData()
+}, 500)
 
 function openNewDialog() {
   isEditMode.value = false
@@ -286,7 +322,7 @@ onMounted(async () => {
                   v-model="searchQuery"
                   placeholder="Cari nama produk..."
                   class="w-full"
-                  @input="loadData"
+                  @input="debouncedSearch"
                 />
               </IconField>
             </div>
@@ -353,10 +389,15 @@ onMounted(async () => {
         <!-- DataTable -->
         <div class="bg-white rounded-lg shadow-sm">
           <DataTable
-            :value="filteredPengeluaran"
+            :value="listData"
             :loading="loading"
+            lazy
             paginator
-            :rows="10"
+            :first="lazyParams.first"
+            :rows="lazyParams.rows"
+            :totalRecords="lazyParams.totalRecords"
+            @page="onLazyLoad"
+            @sort="onLazyLoad"
             :rowsPerPageOptions="[10, 20, 50]"
             responsiveLayout="scroll"
             stripedRows
@@ -367,7 +408,7 @@ onMounted(async () => {
           >
             <Column field="no" header="No">
               <template #body="slotProps">
-                {{ slotProps.index + 1 }}
+                {{ lazyParams.first + slotProps.index + 1 }}
               </template>
             </Column>
             

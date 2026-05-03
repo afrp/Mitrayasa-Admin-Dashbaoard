@@ -190,6 +190,7 @@ async function loadDashboardData() {
     const totalAllPembelian = allPembelianData?.reduce((sum, item) => sum + item.total, 0) || 0
 
     summaryData.value.kasTerkini = totalAllPenjualan - totalAllPembelian - totalPengeluaran
+    console.log('Kas Terkini:', summaryData.value.kasTerkini, 'Total Penjualan:', totalAllPenjualan, 'Total Pembelian:', totalAllPembelian, 'Total Pengeluaran:', totalPengeluaran)
 
     // 5. Total Hutang (Belum Lunas dari pembelian)
     const { data: hutangData } = await supabase

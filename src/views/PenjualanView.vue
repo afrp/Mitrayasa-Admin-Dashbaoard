@@ -6,6 +6,7 @@ import { usePenjualan } from '../composables/usePenjualan'
 import { useProduk } from '../composables/useProduk'
 import { useSupliers } from '../composables/useSupliers'
 import { usePembeli } from '../composables/usePembeli'
+import { useDebounce } from '../composables/useDebounce'
 import { formatCurrency, formatDate } from '../utils/formatters'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -29,7 +30,7 @@ import RadioButton from 'primevue/radiobutton'
 const toast = useToast()
 const confirm = useConfirm()
 
-const { penjualan, loading, getAllPenjualan, createPenjualan, updatePenjualan, deletePenjualan } = usePenjualan()
+const { penjualan, loading, getAllPenjualan, getPenjualanLazy, createPenjualan, updatePenjualan, deletePenjualan } = usePenjualan()
 const { products, getAllProduk, getProdukById } = useProduk()
 const { supliers, getAllSupliers } = useSupliers()
 const { pembeli, getAllPembeli } = usePembeli()
@@ -46,6 +47,18 @@ const showCustomDateRange = ref(false)
 const selectedProdukKategori = ref(null)
 const buyerLabel = ref('Pembeli')
 const showPaymentDialog = ref(false)
+
+const lazyParams = ref({
+  first: 0,
+  rows: 10,
+  page: 0,
+  totalRecords: 0,
+  sortField: 'tanggal_transaksi',
+  sortOrder: -1
+})
+
+const listData = ref([])
+
 const selectedTransactionForPayment = ref({
   id: null,
   total: 0,
@@ -86,12 +99,8 @@ const timeFilterOptions = [
 ]
 
 // Computed
-const filteredPenjualan = computed(() => {
-  return penjualan.value
-})
-
 const totalPenjualan = computed(() => {
-  return penjualan.value.reduce((sum, item) => sum + item.total, 0)
+  return listData.value.reduce((sum, item) => sum + item.total, 0)
 })
 
 const computedTotal = computed(() => {
@@ -152,14 +161,37 @@ function getDateRange() {
 }
 
 async function loadData() {
+  await onLazyLoad()
+}
+
+async function onLazyLoad(event) {
+  if (event) {
+    lazyParams.value.first = event.first
+    lazyParams.value.rows = event.rows
+    lazyParams.value.page = event.page
+    lazyParams.value.sortField = event.sortField
+    lazyParams.value.sortOrder = event.sortOrder
+  }
+
   try {
     const { startDate, endDate } = getDateRange()
-    await getAllPenjualan({
-      startDate,
-      endDate,
-      search: searchQuery.value,
-      status_pembayaran: statusFilter.value !== 'all' ? statusFilter.value : undefined
-    })
+    const result = await getPenjualanLazy(
+      {
+        startDate,
+        endDate,
+        search: searchQuery.value,
+        status_pembayaran: statusFilter.value !== 'all' ? statusFilter.value : undefined
+      },
+      {
+        page: lazyParams.value.page,
+        rows: lazyParams.value.rows,
+        sortField: lazyParams.value.sortField,
+        sortOrder: lazyParams.value.sortOrder
+      }
+    )
+
+    listData.value = result.data
+    lazyParams.value.totalRecords = result.totalRecords
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -169,6 +201,11 @@ async function loadData() {
     })
   }
 }
+
+const debouncedSearch = useDebounce(() => {
+  lazyParams.value.first = 0
+  loadData()
+}, 500)
 
 async function loadMasterData() {
   try {
@@ -471,7 +508,7 @@ onMounted(async () => {
                   v-model="searchQuery"
                   placeholder="Cari nama pembeli atau produk..."
                   class="w-full"
-                  @input="loadData"
+                  @input="debouncedSearch"
                 />
               </IconField>
             </div>
@@ -533,10 +570,15 @@ onMounted(async () => {
         <!-- DataTable -->
         <div class="bg-white rounded-lg shadow-sm">
           <DataTable
-            :value="filteredPenjualan"
+            :value="listData"
             :loading="loading"
+            lazy
             paginator
-            :rows="10"
+            :first="lazyParams.first"
+            :rows="lazyParams.rows"
+            :totalRecords="lazyParams.totalRecords"
+            @page="onLazyLoad"
+            @sort="onLazyLoad"
             :rowsPerPageOptions="[10, 20, 50]"
             responsiveLayout="scroll"
             stripedRows
@@ -547,7 +589,7 @@ onMounted(async () => {
           >
             <Column field="no" header="No">
               <template #body="slotProps">
-                {{ slotProps.index + 1 }}
+                {{ lazyParams.first + slotProps.index + 1 }}
               </template>
             </Column>
             

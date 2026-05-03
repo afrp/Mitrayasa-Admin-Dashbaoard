@@ -56,6 +56,67 @@ export function usePembelian() {
     }
   }
 
+  async function getPembelianLazy(filters = {}, { page = 0, rows = 10, sortField, sortOrder }) {
+    loading.value = true
+    error.value = null
+    try {
+      const from = page * rows
+      const to = from + rows - 1
+
+      let query = supabase
+        .from('pembelian')
+        .select(`
+          *,
+          produk:produk_id(*),
+          suplier:suplier_id(*)
+        `, { count: 'exact' })
+
+      // Sorting
+      if (sortField) {
+        query = query.order(sortField, { ascending: sortOrder === 1 })
+      } else {
+        query = query.order('tanggal_transaksi', { ascending: false })
+          .order('created_at', { ascending: false })
+      }
+
+      // Filters
+      if (filters.startDate) {
+        query = query.gte('tanggal_transaksi', filters.startDate)
+      }
+      if (filters.endDate) {
+        query = query.lte('tanggal_transaksi', filters.endDate)
+      }
+      if (filters.status_pembayaran) {
+        query = query.eq('status_pembayaran', filters.status_pembayaran)
+      }
+
+      const { data, count, error: fetchError } = await query.range(from, to)
+
+      if (fetchError) throw fetchError
+
+      let resultData = data || []
+      if (filters.search) {
+        const s = filters.search.toLowerCase()
+        resultData = resultData.filter(item =>
+          item.produk?.nama_produk.toLowerCase().includes(s) ||
+          item.suplier?.nama_suplier.toLowerCase().includes(s) ||
+          item.keterangan?.toLowerCase().includes(s) ||
+          item.no_transaksi?.toLowerCase().includes(s)
+        )
+      }
+
+      return {
+        data: resultData,
+        totalRecords: count || 0
+      }
+    } catch (e) {
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function createPembelian(formData) {
     loading.value = true
     error.value = null
@@ -178,6 +239,7 @@ export function usePembelian() {
     loading,
     error,
     getAllPembelian,
+    getPembelianLazy,
     createPembelian,
     updatePembelian,
     deletePembelian,

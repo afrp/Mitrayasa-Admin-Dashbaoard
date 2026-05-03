@@ -5,6 +5,7 @@ import { useConfirm } from 'primevue/useconfirm'
 import { usePembelian } from '../composables/usePembelian'
 import { useProduk } from '../composables/useProduk'
 import { useSupliers } from '../composables/useSupliers'
+import { useDebounce } from '../composables/useDebounce'
 import { formatCurrency, formatDate } from '../utils/formatters'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -28,7 +29,7 @@ import Tag from 'primevue/tag'
 const toast = useToast()
 const confirm = useConfirm()
 
-const { pembelian, loading, getAllPembelian, createPembelian, updatePembelian, deletePembelian } = usePembelian()
+const { pembelian, loading, getAllPembelian, getPembelianLazy, createPembelian, updatePembelian, deletePembelian } = usePembelian()
 const { products, getAllProduk, getProdukByKategori } = useProduk()
 const { supliers, getAllSupliers } = useSupliers()
 
@@ -42,6 +43,18 @@ const customStartDate = ref(null)
 const customEndDate = ref(null)
 const showCustomDateRange = ref(false)
 const showPaymentDialog = ref(false)
+
+const lazyParams = ref({
+  first: 0,
+  rows: 10,
+  page: 0,
+  totalRecords: 0,
+  sortField: 'tanggal_transaksi',
+  sortOrder: -1
+})
+
+const listData = ref([])
+
 const selectedTransactionForPayment = ref({
   id: null,
   total: 0,
@@ -49,7 +62,7 @@ const selectedTransactionForPayment = ref({
   sisa_hutang: 0,
   tanggal_jatuh_tempo: null
 })
-const statusFilter = ref('all') 
+const statusFilter = ref('all')
 
 const statusFilterOptions = [
   { label: 'Semua Status', value: 'all' },
@@ -82,12 +95,8 @@ const timeFilterOptions = [
 ]
 
 // Computed
-const filteredPembelian = computed(() => {
-  return pembelian.value
-})
-
 const totalPembelian = computed(() => {
-  return pembelian.value.reduce((sum, item) => sum + item.total, 0)
+  return listData.value.reduce((sum, item) => sum + item.total, 0)
 })
 
 const computedTotal = computed(() => {
@@ -130,14 +139,37 @@ function getDateRange() {
 }
 
 async function loadData() {
+  await onLazyLoad()
+}
+
+async function onLazyLoad(event) {
+  if (event) {
+    lazyParams.value.first = event.first
+    lazyParams.value.rows = event.rows
+    lazyParams.value.page = event.page
+    lazyParams.value.sortField = event.sortField
+    lazyParams.value.sortOrder = event.sortOrder
+  }
+
   try {
     const { startDate, endDate } = getDateRange()
-    await getAllPembelian({
-      startDate,
-      endDate,
-      search: searchQuery.value,
-      status_pembayaran: statusFilter.value !== 'all' ? statusFilter.value : undefined
-    })
+    const result = await getPembelianLazy(
+      {
+        startDate,
+        endDate,
+        search: searchQuery.value,
+        status_pembayaran: statusFilter.value !== 'all' ? statusFilter.value : undefined
+      },
+      {
+        page: lazyParams.value.page,
+        rows: lazyParams.value.rows,
+        sortField: lazyParams.value.sortField,
+        sortOrder: lazyParams.value.sortOrder
+      }
+    )
+
+    listData.value = result.data
+    lazyParams.value.totalRecords = result.totalRecords
   } catch (error) {
     toast.add({
       severity: 'error',
@@ -147,6 +179,11 @@ async function loadData() {
     })
   }
 }
+
+const debouncedSearch = useDebounce(() => {
+  lazyParams.value.first = 0
+  loadData()
+}, 500)
 
 async function loadMasterData() {
   try {
@@ -398,7 +435,7 @@ onMounted(async () => {
                       v-model="searchQuery"
                       placeholder="Cari nama suplier atau produk..."
                       class="w-full"
-                      @input="loadData"
+                      @input="debouncedSearch"
                     />
                   </IconField>
                 </div>
@@ -464,10 +501,15 @@ onMounted(async () => {
         <!-- DataTable -->
         <div class="bg-white rounded-lg shadow-sm">
           <DataTable
-            :value="filteredPembelian"
+            :value="listData"
             :loading="loading"
+            lazy
             paginator
-            :rows="10"
+            :first="lazyParams.first"
+            :rows="lazyParams.rows"
+            :totalRecords="lazyParams.totalRecords"
+            @page="onLazyLoad"
+            @sort="onLazyLoad"
             :rowsPerPageOptions="[10, 20, 50]"
             responsiveLayout="scroll"
             stripedRows
@@ -476,9 +518,9 @@ onMounted(async () => {
             tableStyle="min-width: 375px"
             class="table-mdm"
           >
-            <Column field="no" header="No" sortable>
+            <Column field="no" header="No">
               <template #body="slotProps">
-                {{ slotProps.index + 1 }}
+                {{ lazyParams.first + slotProps.index + 1 }}
               </template>
             </Column>
             
