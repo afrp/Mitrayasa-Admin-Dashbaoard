@@ -82,21 +82,16 @@ export async function generateInvoicePDF(invoiceData) {
   
   // Calculate table start position
   const tableStartY = 85
-  
-  // Prepare table data
-  const hargaSatuan = invoiceData.quantity > 0 
-    ? invoiceData.harga_total 
-    : 0
-  
-  const tableData = [
-    [
-      '1',
-      invoiceData.produk?.nama_produk || '-',
-      `${invoiceData.quantity} ${invoiceData.satuan}`,
-      formatCurrency(hargaSatuan),
-      formatCurrency(invoiceData.harga_total * invoiceData.quantity)
-    ]
-  ]
+
+  // Prepare table data dari invoice_items
+  const items = invoiceData.invoice_items || []
+  const tableData = items.map((item, idx) => [
+    String(idx + 1),
+    item.produk?.nama_produk || '-',
+    `${item.quantity} ${item.satuan}`,
+    formatCurrency(item.harga_satuan),
+    formatCurrency(item.subtotal)
+  ])
   
   // Draw table using autoTable
   autoTable(doc, {
@@ -137,7 +132,7 @@ export async function generateInvoicePDF(invoiceData) {
   
   // Subtotal
   doc.text('Subtotal:', summaryX + 5, finalY + 8)
-  doc.text(formatCurrency(invoiceData.harga_total * invoiceData.quantity), summaryX + 65, finalY + 8, { align: 'right' })
+  doc.text(formatCurrency(invoiceData.subtotal_items || 0), summaryX + 65, finalY + 8, { align: 'right' })
   
   // Pajak
   doc.text('Pajak:', summaryX + 5, finalY + 16)
