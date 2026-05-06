@@ -45,7 +45,8 @@ export function useInvoice() {
           const matchInvoice = item.no_invoice?.toLowerCase().includes(searchLower)
           const matchPembeli = item.pembeli?.nama_pembeli?.toLowerCase().includes(searchLower)
           const matchProduk = item.invoice_items?.some(it =>
-            it.produk?.nama_produk?.toLowerCase().includes(searchLower)
+            it.produk?.nama_produk?.toLowerCase().includes(searchLower) ||
+            it.nama_produk_custom?.toLowerCase().includes(searchLower)
           )
           return matchInvoice || matchPembeli || matchProduk
         })
@@ -88,7 +89,8 @@ export function useInvoice() {
       // Insert items
       const itemsPayload = formData.items.map(item => ({
         invoice_id: createdInvoiceId,
-        produk_id: item.produk_id,
+        produk_id: item.produk_id || null,
+        nama_produk_custom: item.produk_id ? null : (item.nama_produk_custom || null),
         quantity: parseFloat(item.quantity),
         satuan: item.satuan,
         harga_satuan: parseFloat(item.harga_satuan)

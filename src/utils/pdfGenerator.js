@@ -87,7 +87,7 @@ export async function generateInvoicePDF(invoiceData) {
   const items = invoiceData.invoice_items || []
   const tableData = items.map((item, idx) => [
     String(idx + 1),
-    item.produk?.nama_produk || '-',
+    item.produk?.nama_produk || item.nama_produk_custom || '-',
     `${item.quantity} ${item.satuan}`,
     formatCurrency(item.harga_satuan),
     formatCurrency(item.subtotal)

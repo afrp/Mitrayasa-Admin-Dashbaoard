@@ -13,6 +13,7 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import Dropdown from 'primevue/dropdown'
+import AutoComplete from 'primevue/autocomplete'
 import InputNumber from 'primevue/inputnumber'
 import Textarea from 'primevue/textarea'
 import Calendar from 'primevue/calendar'
@@ -55,6 +56,11 @@ const timeFilterOptions = [
   { label: 'Minggu Ini', value: 'week' },
   { label: 'Bulan Ini', value: 'month' },
   { label: 'Custom', value: 'custom' }
+]
+
+const satuanOptions = [
+  { label: 'Liter', value: 'Liter' },
+  { label: 'Kg', value: 'Kg' }
 ]
 
 // Computed
@@ -151,7 +157,36 @@ async function loadMasterData() {
 }
 
 function emptyItem() {
-  return { produk_id: null, quantity: 0, satuan: null, harga_satuan: 0 }
+  return {
+    produk_input: '',
+    produk_suggestions: [],
+    quantity: 0,
+    satuan: null,
+    harga_satuan: 0
+  }
+}
+
+function searchProduk(item, event) {
+  const q = (event.query || '').toLowerCase().trim()
+  item.produk_suggestions = q
+    ? products.value.filter(p => p.nama_produk.toLowerCase().includes(q))
+    : [...products.value]
+}
+
+function onProdukSelect(item, event) {
+  const selected = event.value
+  item.satuan = selected.satuan
+  if (!item.harga_satuan && selected.harga_jual_default) {
+    item.harga_satuan = selected.harga_jual_default
+  }
+}
+
+function resolveProdukInput(input) {
+  if (input && typeof input === 'object' && input.id) {
+    return { produk_id: input.id, nama_produk_custom: null }
+  }
+  const name = typeof input === 'string' ? input.trim() : ''
+  return { produk_id: null, nama_produk_custom: name || null }
 }
 
 function openNewDialog() {
@@ -175,16 +210,6 @@ function addItem() {
 
 function removeItem(idx) {
   formData.value.items.splice(idx, 1)
-}
-
-function onItemProdukChange(item, produkId) {
-  const selected = products.value.find(p => p.id === produkId)
-  if (selected) {
-    item.satuan = selected.satuan
-    if (!item.harga_satuan && selected.harga_jual_default) {
-      item.harga_satuan = selected.harga_jual_default
-    }
-  }
 }
 
 function calcItemSubtotal(item) {
@@ -219,8 +244,9 @@ async function handleSaveAndPrint() {
 
     for (let i = 0; i < formData.value.items.length; i++) {
       const it = formData.value.items[i]
-      if (!it.produk_id) {
-        toast.add({ severity: 'warn', summary: 'Peringatan', detail: `Baris ${i + 1}: produk belum dipilih`, life: 3000 })
+      const resolved = resolveProdukInput(it.produk_input)
+      if (!resolved.produk_id && !resolved.nama_produk_custom) {
+        toast.add({ severity: 'warn', summary: 'Peringatan', detail: `Baris ${i + 1}: produk belum diisi`, life: 3000 })
         return
       }
       if (!it.quantity || it.quantity <= 0) {
@@ -239,12 +265,16 @@ async function handleSaveAndPrint() {
       pembeli_id: formData.value.pembeli_id,
       pajak: formData.value.pajak || 0,
       keterangan: formData.value.keterangan,
-      items: formData.value.items.map(it => ({
-        produk_id: it.produk_id,
-        quantity: it.quantity,
-        satuan: it.satuan,
-        harga_satuan: it.harga_satuan
-      }))
+      items: formData.value.items.map(it => {
+        const resolved = resolveProdukInput(it.produk_input)
+        return {
+          produk_id: resolved.produk_id,
+          nama_produk_custom: resolved.nama_produk_custom,
+          quantity: it.quantity,
+          satuan: it.satuan,
+          harga_satuan: it.harga_satuan
+        }
+      })
     }
 
     const savedInvoice = await createInvoice(payload)
@@ -310,7 +340,7 @@ function isOverdue(jatuhTempo) {
 function itemsPreview(invoice) {
   const items = invoice.invoice_items || []
   if (!items.length) return '-'
-  const first = items[0]?.produk?.nama_produk || '-'
+  const first = items[0]?.produk?.nama_produk || items[0]?.nama_produk_custom || '-'
   if (items.length === 1) return first
   return `${first} (+${items.length - 1} lainnya)`
 }
@@ -554,15 +584,18 @@ onMounted(async () => {
           >
             <Column header="Produk" style="min-width: 200px">
               <template #body="{ data }">
-                <Dropdown
-                  v-model="data.produk_id"
-                  :options="products"
+                <AutoComplete
+                  v-model="data.produk_input"
+                  :suggestions="data.produk_suggestions"
                   optionLabel="nama_produk"
-                  optionValue="id"
-                  placeholder="Pilih produk"
+                  field="nama_produk"
+                  placeholder="Ketik atau pilih produk"
                   class="w-full"
-                  filter
-                  @change="onItemProdukChange(data, data.produk_id)"
+                  inputClass="w-full"
+                  dropdown
+                  :forceSelection="false"
+                  @complete="searchProduk(data, $event)"
+                  @item-select="onProdukSelect(data, $event)"
                 />
               </template>
             </Column>
@@ -579,9 +612,16 @@ onMounted(async () => {
               </template>
             </Column>
 
-            <Column header="Satuan" style="width: 90px">
+            <Column header="Satuan" style="width: 110px">
               <template #body="{ data }">
-                <InputText :value="data.satuan || '-'" disabled class="w-full text-center" />
+                <Dropdown
+                  v-model="data.satuan"
+                  :options="satuanOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  placeholder="Satuan"
+                  class="w-full"
+                />
               </template>
             </Column>
 
