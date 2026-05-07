@@ -16,6 +16,7 @@ import { supabase } from '../composables/useSupabase'
 import InputIcon from 'primevue/inputicon'
 import IconField from 'primevue/iconfield'
 import PermissionGuard from '../components/PermissionGuard.vue'
+import SuplierPaymentDialog from '../components/SuplierPaymentDialog.vue'
 
 const toast = useToast()
 const confirm = useConfirm()
@@ -27,6 +28,8 @@ const showDialog = ref(false)
 const isEditMode = ref(false)
 const searchQuery = ref('')
 const suplierHutang = ref({}) // Store hutang per suplier_id
+const showPaymentDialog = ref(false)
+const selectedSuplierForPayment = ref(null)
 
 // Form data
 const formData = ref({
@@ -206,6 +209,15 @@ async function loadHutangPerSuplier() {
 function getHutangSuplier(suplier_id) {
   return suplierHutang.value[suplier_id] || 0
 }
+
+function openPaymentDialog(data) {
+  selectedSuplierForPayment.value = data
+  showPaymentDialog.value = true
+}
+
+async function handlePaymentSuccess() {
+  await loadHutangPerSuplier()
+}
 </script>
 
 <template>
@@ -285,6 +297,13 @@ function getHutangSuplier(suplier_id) {
             <Column header="Aksi" >
               <template #body="slotProps">
                 <div class="flex gap-2">
+                  <Button
+                    v-if="getHutangSuplier(slotProps.data.id) > 0"
+                    icon="pi pi-money-bill"
+                    class="p-button-success p-button-sm"
+                    v-tooltip.top="'Bayar Hutang'"
+                    @click="openPaymentDialog(slotProps.data)"
+                  />
                   <Button
                     icon="pi pi-pencil"
                     class="p-button-warning p-button-sm"
@@ -368,6 +387,14 @@ function getHutangSuplier(suplier_id) {
         />
       </template>
     </Dialog>
+
+    <SuplierPaymentDialog
+      v-if="selectedSuplierForPayment"
+      v-model:visible="showPaymentDialog"
+      :suplier="selectedSuplierForPayment"
+      :total-hutang="getHutangSuplier(selectedSuplierForPayment.id)"
+      @payment-success="handlePaymentSuccess"
+    />
   </PermissionGuard>
 </template>
 

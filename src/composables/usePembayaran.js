@@ -78,6 +78,102 @@ export function usePembayaran() {
     }
   }
 
+  async function getOutstandingPembelianBySuplier(suplierId) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('pembelian')
+        .select('id, no_transaksi, tanggal_transaksi, total, jumlah_dibayar, sisa_hutang')
+        .eq('suplier_id', suplierId)
+        .eq('status_pembayaran', 'Belum Lunas')
+        .order('tanggal_transaksi', { ascending: true })
+        .order('created_at', { ascending: true })
+
+      if (fetchError) throw fetchError
+      return data || []
+    } catch (e) {
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function getPembayaranPembelianBySuplier(suplierId) {
+    loading.value = true
+    error.value = null
+    try {
+      const { data, error: fetchError } = await supabase
+        .from('pembayaran_pembelian')
+        .select('*, pembelian:pembelian_id!inner(no_transaksi, suplier_id)')
+        .eq('pembelian.suplier_id', suplierId)
+        .order('tanggal_bayar', { ascending: false })
+
+      if (fetchError) throw fetchError
+      return data || []
+    } catch (e) {
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function createPembayaranPembelianBulkFIFO(suplierId, paymentData) {
+    loading.value = true
+    error.value = null
+    try {
+      const totalBayar = parseFloat(paymentData.jumlah_bayar)
+      if (!totalBayar || totalBayar <= 0) {
+        throw new Error('Jumlah bayar harus lebih dari 0')
+      }
+
+      const outstanding = await getOutstandingPembelianBySuplier(suplierId)
+      if (outstanding.length === 0) {
+        throw new Error('Tidak ada hutang yang perlu dibayar untuk suplier ini')
+      }
+
+      const totalHutang = outstanding.reduce((sum, p) => sum + parseFloat(p.sisa_hutang || 0), 0)
+      if (totalBayar > totalHutang) {
+        throw new Error(`Jumlah bayar melebihi total hutang (${totalHutang})`)
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const allocations = []
+      let remaining = totalBayar
+      for (const p of outstanding) {
+        if (remaining <= 0) break
+        const sisa = parseFloat(p.sisa_hutang || 0)
+        if (sisa <= 0) continue
+        const alokasi = Math.min(remaining, sisa)
+        allocations.push({
+          pembelian_id: p.id,
+          tanggal_bayar: paymentData.tanggal_bayar,
+          jumlah_bayar: alokasi,
+          metode_pembayaran: paymentData.metode_pembayaran,
+          keterangan: paymentData.keterangan || null,
+          created_by: user?.id
+        })
+        remaining -= alokasi
+      }
+
+      const { data, error: insertError } = await supabase
+        .from('pembayaran_pembelian')
+        .insert(allocations)
+        .select()
+
+      if (insertError) throw insertError
+      return { rows: data, allocations }
+    } catch (e) {
+      error.value = e.message
+      throw e
+    } finally {
+      loading.value = false
+    }
+  }
+
   // ==========================================
   // PEMBAYARAN PENJUALAN (PIUTANG)
   // ==========================================
@@ -226,6 +322,9 @@ export function usePembayaran() {
     getPembayaranPembelian,
     createPembayaranPembelian,
     deletePembayaranPembelian,
+    getOutstandingPembelianBySuplier,
+    getPembayaranPembelianBySuplier,
+    createPembayaranPembelianBulkFIFO,
     // Pembayaran penjualan
     getPembayaranPenjualan,
     createPembayaranPenjualan,
