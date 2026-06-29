@@ -93,7 +93,7 @@ export function exportLaporanPembelian(data, produkName, dateRange) {
 /**
  * Export Laporan Kas to Excel
  */
-export function exportLaporanKas(data, dateRange, summary) {
+export function exportLaporanKas(data, dateRange, summary, detailRows = []) {
   // Summary rows
   const summaryData = [
     { 'LAPORAN KAS': '', '': '', '': '', '': '', '': '' },
@@ -127,7 +127,23 @@ export function exportLaporanKas(data, dateRange, summary) {
   // Detail sheet
   const wsDetail = XLSX.utils.json_to_sheet(detailData)
   XLSX.utils.book_append_sheet(wb, wsDetail, 'Detail')
-  
+
+  // Rincian transaksi sheet (drill-down: darimana penerimaan & pengeluaran)
+  if (detailRows.length > 0) {
+    const rincianData = detailRows.map((row, index) => ({
+      'No': index + 1,
+      'Tanggal': formatDate(row.tanggal, 'dd/MM/yyyy'),
+      'Arus': row.arus,
+      'Jenis': row.jenis,
+      'Keterangan': row.deskripsi,
+      'Dari/Ke': row.partner,
+      'Penerimaan': row.arus === 'Penerimaan' ? row.nominal : 0,
+      'Pengeluaran': row.arus === 'Pengeluaran' ? row.nominal : 0
+    }))
+    const wsRincian = XLSX.utils.json_to_sheet(rincianData)
+    XLSX.utils.book_append_sheet(wb, wsRincian, 'Rincian Transaksi')
+  }
+
   const filename = `Laporan_Kas_${dateRange.start}_${dateRange.end}`
   XLSX.writeFile(wb, `${filename}.xlsx`)
 }

@@ -15,7 +15,7 @@ import AppSidebar from '../components/layout/AppSidebar.vue'
 import PermissionGuard from '../components/PermissionGuard.vue'
 
 const toast = useToast()
-const { loading, getLaporanKas } = useLaporan()
+const { loading, getLaporanKas, getKasDetailByDate } = useLaporan()
 
 // State
 const sidebarVisible = ref(false)
@@ -25,6 +25,11 @@ const reportData = ref([])
 const showResult = ref(false)
 const chartData = ref(null)
 const chartOptions = ref(null)
+
+// Row expansion (drill-down rincian per tanggal)
+const expandedRows = ref({})
+const detailMap = ref({})        // { [tanggal]: { penerimaan: [], pengeluaran: [] } }
+const detailLoading = ref({})    // { [tanggal]: boolean }
 
 // Computed
 const saldoAwal = computed(() => {
@@ -73,7 +78,12 @@ async function handleProses() {
     
     reportData.value = data
     showResult.value = true
-    
+
+    // Reset drill-down cache untuk hasil baru
+    expandedRows.value = {}
+    detailMap.value = {}
+    detailLoading.value = {}
+
     // Generate chart data
     generateChartData(data)
 
@@ -94,6 +104,34 @@ async function handleProses() {
       life: 3000
     })
   }
+}
+
+async function onRowExpand(event) {
+  const tanggal = event.data.tanggal
+  // Sudah ada di cache → tidak perlu fetch ulang
+  if (detailMap.value[tanggal]) return
+
+  detailLoading.value[tanggal] = true
+  try {
+    detailMap.value[tanggal] = await getKasDetailByDate(
+      formatDate(tanggal, 'yyyy-MM-dd')
+    )
+  } catch (error) {
+    console.error('Error loading detail:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Gagal memuat rincian transaksi: ' + error.message,
+      life: 3000
+    })
+  } finally {
+    detailLoading.value[tanggal] = false
+  }
+}
+
+function detailSubtotal(items) {
+  if (!items) return 0
+  return items.reduce((sum, item) => sum + (item.nominal || 0), 0)
 }
 
 function generateChartData(data) {
@@ -143,7 +181,7 @@ function generateChartData(data) {
   }
 }
 
-function handleExport() {
+async function handleExport() {
   if (!canExport.value) return
 
   try {
@@ -154,13 +192,32 @@ function handleExport() {
       saldoAkhir: saldoAkhir.value
     }
 
+    // Kumpulkan rincian transaksi semua tanggal (pakai cache, fetch sisanya)
+    const detailRows = []
+    for (const row of reportData.value) {
+      const tanggal = row.tanggal
+      if (!detailMap.value[tanggal]) {
+        detailMap.value[tanggal] = await getKasDetailByDate(
+          formatDate(tanggal, 'yyyy-MM-dd')
+        )
+      }
+      const detail = detailMap.value[tanggal]
+      detail.penerimaan.forEach((item) =>
+        detailRows.push({ tanggal, arus: 'Penerimaan', ...item })
+      )
+      detail.pengeluaran.forEach((item) =>
+        detailRows.push({ tanggal, arus: 'Pengeluaran', ...item })
+      )
+    }
+
     exportLaporanKas(
       reportData.value,
       {
         start: formatDate(startDate.value, 'yyyy-MM-dd'),
         end: formatDate(endDate.value, 'yyyy-MM-dd')
       },
-      summary
+      summary,
+      detailRows
     )
 
     toast.add({
@@ -320,6 +377,9 @@ onMounted(() => {
           <div class="bg-white rounded-lg shadow-sm">
             <DataTable
               :value="reportData"
+              v-model:expandedRows="expandedRows"
+              dataKey="tanggal"
+              @row-expand="onRowExpand"
               paginator
               :rows="10"
               :rowsPerPageOptions="[10, 20, 50]"
@@ -330,6 +390,8 @@ onMounted(() => {
               tableStyle="min-width: 375px"
               class="table-mdm"
             >
+              <Column expander style="width: 3rem" />
+
               <Column field="no" header="No" style="width: 70px">
                 <template #body="slotProps">
                   {{ slotProps.index + 1 }}
@@ -371,6 +433,75 @@ onMounted(() => {
                   </span>
                 </template>
               </Column>
+
+              <template #expansion="slotProps">
+                <div class="p-4 bg-gray-50">
+                  <div v-if="detailLoading[slotProps.data.tanggal]" class="flex items-center gap-2 text-gray-500 py-4">
+                    <i class="pi pi-spin pi-spinner"></i>
+                    <span>Memuat rincian...</span>
+                  </div>
+
+                  <div v-else class="flex flex-col gap-6">
+                    <!-- Rincian Penerimaan -->
+                    <div>
+                      <h4 class="flex items-center gap-2 font-semibold text-green-700 mb-2">
+                        <i class="pi pi-arrow-down"></i>
+                        Rincian Penerimaan
+                      </h4>
+                      <DataTable
+                        :value="detailMap[slotProps.data.tanggal]?.penerimaan"
+                        :emptyMessage="'Tidak ada penerimaan'"
+                        responsiveLayout="scroll"
+                        class="text-sm"
+                      >
+                        <Column field="jenis" header="Jenis" style="width: 130px" />
+                        <Column field="deskripsi" header="Keterangan" />
+                        <Column field="partner" header="Dari" />
+                        <Column field="nominal" header="Nominal" style="width: 160px">
+                          <template #body="d">
+                            <span class="text-green-600 font-medium">{{ formatCurrency(d.data.nominal) }}</span>
+                          </template>
+                        </Column>
+                        <template #footer>
+                          <div class="flex justify-end gap-4 font-semibold text-green-700">
+                            <span>Total Penerimaan</span>
+                            <span>{{ formatCurrency(detailSubtotal(detailMap[slotProps.data.tanggal]?.penerimaan)) }}</span>
+                          </div>
+                        </template>
+                      </DataTable>
+                    </div>
+
+                    <!-- Rincian Pengeluaran -->
+                    <div>
+                      <h4 class="flex items-center gap-2 font-semibold text-red-700 mb-2">
+                        <i class="pi pi-arrow-up"></i>
+                        Rincian Pengeluaran
+                      </h4>
+                      <DataTable
+                        :value="detailMap[slotProps.data.tanggal]?.pengeluaran"
+                        :emptyMessage="'Tidak ada pengeluaran'"
+                        responsiveLayout="scroll"
+                        class="text-sm"
+                      >
+                        <Column field="jenis" header="Jenis" style="width: 150px" />
+                        <Column field="deskripsi" header="Keterangan" />
+                        <Column field="partner" header="Ke / Tipe" />
+                        <Column field="nominal" header="Nominal" style="width: 160px">
+                          <template #body="d">
+                            <span class="text-red-600 font-medium">{{ formatCurrency(d.data.nominal) }}</span>
+                          </template>
+                        </Column>
+                        <template #footer>
+                          <div class="flex justify-end gap-4 font-semibold text-red-700">
+                            <span>Total Pengeluaran</span>
+                            <span>{{ formatCurrency(detailSubtotal(detailMap[slotProps.data.tanggal]?.pengeluaran)) }}</span>
+                          </div>
+                        </template>
+                      </DataTable>
+                    </div>
+                  </div>
+                </div>
+              </template>
             </DataTable>
           </div>
         </div>
